@@ -64,6 +64,8 @@ pip install -r requirements.txt
 
 `bongard` 0.0.2 pins `pandas==1.0.5`, which does not build on current Python (tested on 3.14). The renderer does not use pandas, so the package is installed without its dependencies and `requirements.txt` supplies current versions.
 
+Scripts that draw programs (`02_render_pair.py` onwards) also need Ghostscript, which PIL uses to rasterize the painter's PostScript output: `sudo apt install -y xvfb ghostscript` on Linux, `brew install ghostscript` on macOS, and on Windows the 64-bit installer from the official releases (github.com/ArtifexSoftware/ghostpdl-downloads). The Windows installer does not add Ghostscript to PATH; the scripts look in `C:\Program Files\gs`. `bongard` 0.0.2 predates Pillow 11, whose EPS loading breaks the painter's PNG step; `02_render_pair.py` patches that step, see `restore_rgb_eps()`.
+
 Download the dataset into `data/` following the official repository. Then
 
 ```
