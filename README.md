@@ -57,9 +57,12 @@ Scripts are numbered in the order they are run. Each script starts with a docstr
 ## Setup
 
 ```
-pip install bongard
+python -m venv .venv
+pip install --no-deps bongard==0.0.2
 pip install -r requirements.txt
 ```
+
+`bongard` 0.0.2 pins `pandas==1.0.5`, which does not build on current Python (tested on 3.14). The renderer does not use pandas, so the package is installed without its dependencies and `requirements.txt` supplies current versions.
 
 Download the dataset into `data/` following the official repository. Then
 
