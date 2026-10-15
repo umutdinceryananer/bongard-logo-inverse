@@ -11,7 +11,8 @@ Output:   outputs/figures/02_render_pair.png, five rows of dataset image next to
 Decision: 2 (dataset images, rendered images or both), 8 (render-level evaluation).
 
 Needs a display for Python turtle (on headless Linux run under xvfb-run) and
-Ghostscript, which PIL uses to rasterize the painter's PostScript output.
+Ghostscript, which PIL uses to rasterize the painter's PostScript output. With
+Pillow 11 or later the painter needs a small patch, see restore_rgb_eps().
 
 Usage: python scripts/02_render_pair.py [--seed S]
 """
@@ -25,7 +26,9 @@ import shutil
 import sys
 import turtle
 from pathlib import Path
+from types import SimpleNamespace
 
+import bongard.bongard_painter as bongard_painter
 import numpy as np
 from bongard import BongardImage, BongardProblemPainter
 from PIL import EpsImagePlugin, Image, ImageDraw, ImageFont
@@ -53,6 +56,18 @@ def ensure_ghostscript():
             os.environ["PATH"] = str(Path(newest).parent) + os.pathsep + os.environ["PATH"]
     if not EpsImagePlugin.has_ghostscript():
         sys.exit("Ghostscript not found. See README, Setup.")
+
+
+def restore_rgb_eps():
+    """Make the painter's PostScript-to-PNG step behave as with Pillow 10.4 and earlier.
+
+    bongard_painter.py runs Image.open(ps).resize((512, 512)). Up to Pillow 10.4,
+    Ghostscript rasterized EPS with the ppmraw device, which always gives RGB.
+    Pillow 11 switched to pnmraw, which gives a bilevel ("1") image for a
+    black-and-white drawing, and the default bicubic resize rejects that mode.
+    Converting to RGB gives the pixels ppmraw would have produced.
+    """
+    bongard_painter.Image = SimpleNamespace(open=lambda fp: Image.open(fp).convert("RGB"))
 
 
 def select(seed):
@@ -120,6 +135,7 @@ def main():
     args = parser.parse_args()
 
     ensure_ghostscript()
+    restore_rgb_eps()
     picks = select(args.seed)
     for t, problem, folder, index, program in picks:
         print(f"{t}/images/{problem}/{folder}/{index}.png  {json.dumps(program)}")
