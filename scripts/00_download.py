@@ -2,8 +2,9 @@
 
 Question: Can the dataset be downloaded in full from the link in the official repository?
 Input:    The Google Drive link in the NVlabs/Bongard-LOGO README (a single zip file).
-Output:   data/raw/ShapeBongard_V2.zip, the zip contents extracted under data/,
-          and the zip size and SHA-256 printed to stdout.
+Output:   data/raw/ShapeBongard_V2.zip, the zip contents extracted under data/
+          without macOS metadata (__MACOSX/, .DS_Store), and the zip size and
+          SHA-256 printed to stdout.
 Decision: None directly. Prerequisite for every later script.
 
 Usage: python scripts/00_download.py
@@ -32,17 +33,25 @@ def sha256(path, chunk=1 << 20):
     return h.hexdigest()
 
 
+def is_macos_metadata(name):
+    """True for macOS archive metadata: the __MACOSX/ tree and .DS_Store files."""
+    return name.startswith("__MACOSX/") or name.rsplit("/", 1)[-1] == ".DS_Store"
+
+
 def safe_extract(zip_path, target):
-    """Extract the zip after checking that no member writes outside target."""
+    """Extract the zip without macOS metadata, after checking that no member
+    writes outside target. Returns the top-level entries and the skip count."""
     target = target.resolve()
     with zipfile.ZipFile(zip_path) as z:
-        for name in z.namelist():
+        names = z.namelist()
+        members = [n for n in names if not is_macos_metadata(n)]
+        for name in members:
             dest = (target / name).resolve()
             if not dest.is_relative_to(target):
                 sys.exit(f"Zip member points outside the target directory: {name}")
-        tops = sorted({n.split("/")[0] for n in z.namelist()})
-        z.extractall(target)
-    return tops
+        tops = sorted({n.split("/")[0] for n in members})
+        z.extractall(target, members=members)
+    return tops, len(names) - len(members)
 
 
 def main():
@@ -55,8 +64,9 @@ def main():
     print(f"Size:    {ZIP_PATH.stat().st_size / 2**20:.1f} MiB")
     print(f"SHA-256: {sha256(ZIP_PATH)}")
 
-    tops = safe_extract(ZIP_PATH, DATA)
+    tops, skipped = safe_extract(ZIP_PATH, DATA)
     print(f"Extracted under data/, top-level entries: {tops}")
+    print(f"Skipped {skipped} macOS metadata entries")
 
 
 if __name__ == "__main__":
