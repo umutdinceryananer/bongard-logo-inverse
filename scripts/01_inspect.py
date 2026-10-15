@@ -204,6 +204,17 @@ def inspect_multi_shape(programs):
             name, s, i, image = example
             say(f"      example {t}/images/{name}/{SIDE_FOLDERS[s]}/{i}.png: {json.dumps(image)}")
 
+    # ff ids look like ff_nact<a> or ff_nact<a>_<b>: compare the numbers with the programs.
+    match = total = 0
+    for name, sides in programs["ff"].items():
+        numbers = sorted(int(n) for n in re.findall(r"\d+", problem_name(name)))
+        for side in sides:
+            for image in side:
+                total += 1
+                match += sorted(len(shape) for shape in image) == numbers
+    say(f"  ff ids ff_nact<a>[_<b>]: {match}/{total} images have one shape per number in the id, "
+        f"with that many actions")
+
 
 def inspect_splits(problems, programs):
     heading("6. Splits")
