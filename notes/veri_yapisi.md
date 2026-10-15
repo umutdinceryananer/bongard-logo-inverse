@@ -49,6 +49,7 @@ Evidence for the side-to-folder mapping:
 - The painter writes positives to folder `1`.
 - The official loader `Bongard-LOGO_Baselines/datasets/shape_program.py` pairs side 0 with `1/*.png`.
 - Checked by eye on `ff_nact4_0000` image 0. The two sides differ only in the stroke style of the last action, and the two images differ in the same way.
+- Consistent in all five rows of `outputs/figures/02_render_pair.png`. In the bd, bd and hd rows the program is unique among the 14 of its problem, so those rows also check that list index i is file `i.png`.
 
 ### Grammar
 
@@ -89,7 +90,12 @@ The official generation scripts (`examples/02-bongard_logo/generate_*_problems.p
 
 With `magnifier_effect` on, marker size and spacing grow with the scaling factor.
 
-Consequence: drawing a dataset program again does not give the dataset image pixel for pixel. It gives the same shape up to position, rotation and scale. `scripts/02_render_pair.py` checks this.
+Consequence: drawing a dataset program again does not give the dataset image pixel for pixel. `scripts/02_render_pair.py` draws five programs with the official settings and puts each next to its dataset image (`outputs/figures/02_render_pair.png`):
+
+- **Picks:** ff and bd with one and two shapes, hd with one; seed 0.
+- **Same:** in all five the shapes match by eye in strokes, styles, angles and connections.
+- **Different:** position, rotation and scale; in two-shape images also the placement of the two shapes.
+- **Format:** the drawn images match the dataset images: 512 x 512, R = G = B, 197 to 256 gray levels.
 
 ## Two-shape images
 
@@ -155,6 +161,4 @@ Exact match undercounts repetition, since the same shape can be written from ano
   - Comparing a rendered program with the dataset image needs pose alignment.
   - 56 to 69 % of shape occurrences in val, test_bd and the two hd test sets have a program seen in train.
   - test_ff is at 10.7 % and has longer programs than train.
-- **Open:**
-  - Arc radius values (`03_stats.py`).
-  - The side-to-folder mapping was checked by eye on one image pair; `02_render_pair.py` adds more cases.
+- **Open:** arc radius values (`03_stats.py`).
