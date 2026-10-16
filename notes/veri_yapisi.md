@@ -101,6 +101,15 @@ Consequence: drawing a dataset program again does not give the dataset image pix
   - The zip is dated 2020-08-07 and the code was uploaded on 2020-10-02 in a single commit, so the ff images were probably drawn with an earlier version of the painter. For bd and hd the published settings look right.
 - **Format:** the drawn images match the dataset images: 512 x 512, R = G = B, 197 to 256 gray levels.
 
+### Parked on 2026-10-16
+
+Two follow-ups were considered and parked:
+
+- Finding the painter settings that reproduce the dataset's ff images exactly (magnifier off, and the line length against arc radius).
+- A pose-alignment measurement: draw a program at a known pose, search over rotation, scale and shift for the best overlap with the dataset image, and report the overlap. It would turn the by-eye comparison above into a number.
+
+Reason: neither is needed on the planned path. Training uses the dataset images as they are, and the planned render-level metric draws the predicted program and the ground-truth program with the same renderer at the same pose and compares those two drawings, so the renderer does not have to match the dataset images. Revisit if Decision 2 chooses rendered training images or Decision 6 chooses render-and-compare against the input image.
+
 ## Two-shape images
 
 A two-shape image is stored as a list of two shape programs. Nothing links the two:
@@ -163,6 +172,7 @@ Exact match undercounts repetition, since the same shape can be written from ano
 - **Decision 2 (images):** 512 x 512 grayscale; the median drawing spans 135 to 290 pixels depending on type. The published renderer does not reproduce the dataset's ff images (stamp density, line length against arc radius); rendered training images would need that settled first.
 - **Decision 8 (evaluation):**
   - Comparing a rendered program with the dataset image needs pose alignment and, for ff, a renderer that reproduces the dataset images.
+  - Comparing the drawing of the predicted program with the drawing of the ground-truth program, same renderer and same pose, needs neither. This is the planned render-level metric; see Parked.
   - 56 to 69 % of shape occurrences in val, test_bd and the two hd test sets have a program seen in train.
   - test_ff is at 10.7 % and has longer programs than train.
 - **Open:** arc radius values (`03_stats.py`).
