@@ -93,8 +93,12 @@ With `magnifier_effect` on, marker size and spacing grow with the scaling factor
 Consequence: drawing a dataset program again does not give the dataset image pixel for pixel. `scripts/02_render_pair.py` draws five programs with the official settings and puts each next to its dataset image (`outputs/figures/02_render_pair.png`):
 
 - **Picks:** ff and bd with one and two shapes, hd with one; seed 0.
-- **Same:** in all five the shapes match by eye in strokes, styles, angles and connections.
+- **Same:** in all five the sequence of strokes, styles, turns and connections matches by eye, so the programs belong to the images.
 - **Different:** position, rotation and scale; in two-shape images also the placement of the two shapes.
+- **Proportions:** the bd and hd rows match. The two ff rows do not, in two ways:
+  - Stamps. The dataset ff images have fixed-size stamps at a fixed spacing, 4 to 5 per unit line, which is what the painter draws with `magnifier_effect=False`. The published script sets `magnifier_effect=True`, which scales stamp size and spacing with the shape so that a unit line always holds 9 stamps. With the magnifier off the stamps match (checked on both ff rows).
+  - Line length against arc radius. In the dataset image of `ff_nact3_3_0185` the straight segments of the arc-line-line shape look about as long as the arc radius; the published painter draws them twice as long (line 1.0, radius 0.5). Seen by eye with a projection test, not measured.
+  - The zip is dated 2020-08-07 and the code was uploaded on 2020-10-02 in a single commit, so the ff images were probably drawn with an earlier version of the painter. For bd and hd the published settings look right.
 - **Format:** the drawn images match the dataset images: 512 x 512, R = G = B, 197 to 256 gray levels.
 
 ## Two-shape images
@@ -156,9 +160,9 @@ Exact match undercounts repetition, since the same shape can be written from ano
 ## Inputs to the decisions
 
 - **Decision 1 (task definition):** programs carry no pose, two-shape images carry no relative placement, and the order of the two shapes is arbitrary.
-- **Decision 2 (images):** 512 x 512 grayscale; the median drawing spans 135 to 290 pixels depending on type.
+- **Decision 2 (images):** 512 x 512 grayscale; the median drawing spans 135 to 290 pixels depending on type. The published renderer does not reproduce the dataset's ff images (stamp density, line length against arc radius); rendered training images would need that settled first.
 - **Decision 8 (evaluation):**
-  - Comparing a rendered program with the dataset image needs pose alignment.
+  - Comparing a rendered program with the dataset image needs pose alignment and, for ff, a renderer that reproduces the dataset images.
   - 56 to 69 % of shape occurrences in val, test_bd and the two hd test sets have a program seen in train.
   - test_ff is at 10.7 % and has longer programs than train.
 - **Open:** arc radius values (`03_stats.py`).
