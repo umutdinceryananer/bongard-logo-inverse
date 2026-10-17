@@ -42,6 +42,21 @@ The most frequent values in bd and hd: line length 0.500 (16%), then 0.400, 0.20
 
 The arc radius is 0.500 in all 300,247 arcs. This closes the open question in `veri_yapisi.md`.
 
+### Which fields can be dropped from the output
+
+Rule: a field can be left out of the model's output without loss only if it takes one value in the whole dataset. Distinct values per field over all 1,270,887 actions:
+
+| field | ff | bd | hd | whole dataset |
+|---|---|---|---|---|
+| action type (line / arc) | 2 | 2 | 2 | 2 |
+| style | 5 | 5 | 5 | 5 |
+| line length | 1 | 157 | 157 | 157 |
+| arc radius | 1 | 1 | 1 | **1** (0.500 in all 300,247 arcs) |
+| arc angle | 1 | 45 | 45 | 45 |
+| turn | 11 | 278 | 278 | 278 |
+
+Only the arc radius is constant over the whole dataset, so it is the only field that can be dropped without loss. Line length and arc angle are constant in ff only; they vary in bd and hd and must stay.
+
 ## 4. Free-form length gap (`outputs/figures/03_ff_length_gap.png`)
 
 Finding: every train and val ff image has 4 to 8 actions; every test_ff image has 9. All 8,400 test_ff images are longer than the longest training image.
