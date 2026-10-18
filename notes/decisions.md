@@ -126,7 +126,7 @@ Two questions, answered separately.
 
 **Choice:** two models through the Gemini API, same images, same prompts.
 - `gemini-2.5-flash`: the pixel baseline of the C-G paper (Vaishnav and Tammet 2026), so the result speaks to the same model: Gemini is near chance on Bongard-LOGO from pixels; can it write the program? Comparability is the only reason to use it. Caveat: the API documentation (checked 2026-10-18) says the 2.5 models are served only to projects that used them before; whether our key can reach it is checked at the first call.
-- `gemini-3.6-flash`: a current model, answering a second question: has the ability of VLMs to read line drawings changed since the paper was written with 2.5? If the two results differ, the paper's finding depends on the model generation.
+- `gemini-3.8-flash`: a current model, answering a second question: has the ability of VLMs to read line drawings changed since the paper was written with 2.5? If the two results differ, the paper's finding depends on the model generation.
 
 Cheap, and an API key is easy to obtain.
 
