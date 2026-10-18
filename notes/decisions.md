@@ -29,7 +29,22 @@ line_<style>_<length>-<turn>
 arc_<style>_<arc_angle>-<turn>
 ```
 
-### 1b. Two-shape images: keep the shape boundary in the output? **open**
+### 1b. Two-shape images: keep the shape boundary in the output? Decided 2026-10-18
+
+**Options**
+- (a) Keep the boundary: the two shapes are written as two groups with a separator between them.
+- (b) Drop the boundary: all actions of the image in one flat list.
+
+**Choice:** (a). The separator character is fixed together with the model's tokenizer (Decision 3).
+
+**Reasons**
+- The boundary is a drawing instruction: the painter lifts the pen and starts the second shape at a new place. Without it the same actions draw one connected shape, which is a different picture (`outputs/figures/1b_shape_boundary.png`: the triangle and the C of `ff_nact3_3_0185` merge; the dagger and the leaf of `bd_thin_symm_dagger-open_symm_arc60_0000` overlap).
+- With the boundary the dataset format is recovered exactly, so the programs can be fed to the C-G pipeline unchanged and rendered for the render-level evaluation. Without it the conversion back is lossy.
+- The cost is one extra token per two-shape image, and the two separate parts are visible in the image.
+
+**Evidence:** `scripts/fig_1b_shape_boundary.py`, `outputs/figures/1b_shape_boundary.png`; two-shape images are 50% of ff and 84% of bd, none in hd (`data_layout.md`).
+
+**Open check:** whether the two shapes ever overlap or touch in the dataset images. The painter only enforces a minimum distance between the two start points (300 canvas units), not between the drawn shapes.
 
 ### 1c. Two-shape images: which shape comes first? **open**
 
