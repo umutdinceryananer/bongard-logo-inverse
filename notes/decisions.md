@@ -156,7 +156,7 @@ Thinking: `thinking_level` is "low" on both models (the lowest level the API off
 
 Rate limits: the free tier allows 20 requests per day per model (hit on 2026-10-18 after 21 calls); the full run needs about 1,000 calls and therefore the paid tier (enabled 2026-10-18).
 
-Crop check (step 2, 2026-10-18): the same 18 images, gemini-3.8-flash, K2, once at native 512 px and once cropped to the ink (decision 2c crop, resized back to 512). Style accuracy under best alignment: all 77.3 to 83.7 (+6.4 points), ff 76.8 to 83.8, bd 58.3 to 66.7 (n=2), hd 100 to 100; exact match 5.6 to 16.7. The rule fixed in the design asked for 10 points or more; the difference is below that, so the full run uses the native 512 px images, no crop. Caveat: 18 images, the difference is within noise either way.
+Crop check, preliminary result on 18 images (step 2, 2026-10-18): the same 18 images, gemini-3.8-flash, K2, once at native 512 px and once cropped to the ink (decision 2c crop, resized back to 512; the example images are cropped too). Style accuracy under best alignment: all 77.3 to 83.7 (+6.4 points), ff 76.8 to 83.8, bd 58.3 to 66.7 (n=2), hd 100 to 100; exact match 5.6 to 16.7. Below the 10-point rule, but 18 images are within noise either way. The resolution decision is taken on all 150 images (step 3a: K2 at both resolutions), same rule, 10 points.
 
 ## Open questions
 
