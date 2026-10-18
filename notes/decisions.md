@@ -154,7 +154,9 @@ Decision rule for 3a, fixed before the full run: "cannot read" only if, in every
 
 Thinking: `thinking_level` is "low" on both models (the lowest level the API offers for them). In the pilot (18 answers, gemini-3.8-flash) the model thought in about half of the calls: 0 thought tokens in 9 answers, about 1,960 in 8, 344 and 1,305 once each. "Low" therefore does not switch thinking off. Accepted as the setting of the experiment; a comparison with "medium" is an open question, not run. The output token budget was raised from 2,048 to 8,192 after one answer was cut off, because the budget covers the thought tokens.
 
-Rate limits: the free tier allows 20 requests per day per model (hit on 2026-10-18 after 21 calls); the full run needs about 1,000 calls and therefore the paid tier.
+Rate limits: the free tier allows 20 requests per day per model (hit on 2026-10-18 after 21 calls); the full run needs about 1,000 calls and therefore the paid tier (enabled 2026-10-18).
+
+Crop check (step 2, 2026-10-18): the same 18 images, gemini-3.8-flash, K2, once at native 512 px and once cropped to the ink (decision 2c crop, resized back to 512). Style accuracy under best alignment: all 77.3 to 83.7 (+6.4 points), ff 76.8 to 83.8, bd 58.3 to 66.7 (n=2), hd 100 to 100; exact match 5.6 to 16.7. The rule fixed in the design asked for 10 points or more; the difference is below that, so the full run uses the native 512 px images, no crop. Caveat: 18 images, the difference is within noise either way.
 
 ## Open questions
 
