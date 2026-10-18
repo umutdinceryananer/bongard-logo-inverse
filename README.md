@@ -12,7 +12,7 @@ This repository works on that missing step. Input is one Bongard-LOGO image, out
 
 ## Status
 
-Week of 14 to 20 October 2026. The goal for this week is a set of design decisions with evidence, not a trained model. Each decision is recorded in `notes/kararlar.md` with the options considered, the choice, the reason and the evidence behind it.
+Week of 14 to 20 October 2026. The goal for this week is a set of design decisions with evidence, not a trained model. Each decision is recorded in `notes/decisions.md` with the options considered, the choice, the reason and the evidence behind it.
 
 Decisions in scope
 
@@ -47,9 +47,9 @@ outputs/
   figures/             plots and side-by-side images
   logs/                zero-shot outputs, training loss
 notes/
-  karar_gunlugu.md     one line per day, decision, evidence, open question
-  veri_yapisi.md       data layout notes
-  kararlar.md          the eight decisions
+  decision_log.md     one line per day, decision, evidence, open question
+  data_layout.md       data layout notes
+  decisions.md          the eight decisions
 ```
 
 Scripts are numbered in the order they are run. Each script starts with a docstring stating the question it answers, its input, its output and the decision it feeds.

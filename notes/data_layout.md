@@ -175,4 +175,4 @@ Exact match undercounts repetition, since the same shape can be written from ano
   - Comparing the drawing of the predicted program with the drawing of the ground-truth program, same renderer and same pose, needs neither. This is the planned render-level metric; see Parked.
   - 56 to 69 % of shape occurrences in val, test_bd and the two hd test sets have a program seen in train.
   - test_ff is at 10.7 % and has longer programs than train.
-- **Closed:** the arc radius is 0.500 in every arc of the dataset (`program_istatistikleri.md`, section 3).
+- **Closed:** the arc radius is 0.500 in every arc of the dataset (`program_statistics.md`, section 3).

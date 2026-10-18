@@ -21,7 +21,7 @@ Fixed by the data, not decided: the input is one 512 x 512 grayscale image; the 
 - The output stays shorter than (a) and keeps the dataset grammar, so program-level comparison with the ground truth is direct and rendering uses the existing parser after the radius is re-inserted.
 - (c) is 3 to 5 times longer, needs a free-text parser before scoring or rendering, and adds error surface without adding information.
 
-**Evidence:** `program_istatistikleri.md`, section 3, "Which fields can be dropped from the output" (counts over all 1,270,887 actions).
+**Evidence:** `program_statistics.md`, section 3, "Which fields can be dropped from the output" (counts over all 1,270,887 actions).
 
 **Format after the decision**
 ```

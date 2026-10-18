@@ -40,7 +40,7 @@ Finding: every numeric field takes values from a finite set, not from a continuu
 
 The most frequent values in bd and hd: line length 0.500 (16%), then 0.400, 0.200, 1.000, 0.300; arc angle 0.625 (29-31%), 0.583, 0.667, 0.648, 0.750; turn 0.500 (21-23%), 0.750 (16-18%).
 
-The arc radius is 0.500 in all 300,247 arcs. This closes the open question in `veri_yapisi.md`.
+The arc radius is 0.500 in all 300,247 arcs. This closes the open question in `data_layout.md`.
 
 ### Which fields can be dropped from the output
 
