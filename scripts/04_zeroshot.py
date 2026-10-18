@@ -464,13 +464,19 @@ def api_key():
     return key
 
 
+def image_file(path):
+    """Dataset-relative path, or an absolute path (used by the memorization check)."""
+    p = Path(path)
+    return p if p.is_absolute() else DATA / p
+
+
 def crop_to_ink(path, margin=0.10, size=512):
     """Decision 2c crop: square around the ink bounding box with a proportional
     margin, white padding outside the image, resized back to 512 px so that the
     pixel count sent to the API is the same as without the crop."""
     import numpy as np
     from PIL import Image
-    img = Image.open(DATA / path).convert("L")
+    img = Image.open(image_file(path)).convert("L")
     ys, xs = np.nonzero(np.asarray(img) < 128)
     x0, y0, x1, y1 = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
     side = int(round(max(x1 - x0, y1 - y0) * (1 + 2 * margin)))
@@ -487,7 +493,7 @@ def image_item(path, crop=False):
         crop_to_ink(path).save(buf, format="PNG")
         raw = buf.getvalue()
     else:
-        raw = (DATA / path).read_bytes()
+        raw = image_file(path).read_bytes()
     return {"type": "image", "data": base64.b64encode(raw).decode(), "mime_type": "image/png", "resolution": "high"}
 
 
