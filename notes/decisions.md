@@ -44,7 +44,7 @@ arc_<style>_<arc_angle>-<turn>
 
 **Evidence:** `scripts/fig_1b_shape_boundary.py`, `outputs/figures/1b_shape_boundary.png`; two-shape images are 50% of ff and 84% of bd, none in hd (`data_layout.md`).
 
-**Open check:** whether the two shapes ever overlap or touch in the dataset images. The painter only enforces a minimum distance between the two start points (300 canvas units), not between the drawn shapes.
+**Check (2026-10-18): do the two shapes ever touch or overlap?** Yes, in a small minority. The painter only enforces a minimum distance between the two start points (300 canvas units), not between the drawn shapes. Measured on all 72,422 two-shape images (`scripts/check_1b_shape_overlap.py`): the ink forms a single group in 3.93% of them (ff 2.54%, bd 4.67%), which means the shapes touch, overlap, or lie within about 24 pixels of each other; in the remaining 96% the two shapes are clearly apart. Control: one-shape images fall apart into two groups in only 0.17% of cases, so the method itself is reliable. Examples in `outputs/figures/1b_touching_examples.png` (a check figure, not for slides) show mostly real overlaps and a few near misses. The decision stands; the touching cases are a harder minority for the model, not a reason to change the output format.
 
 ### 1c. Two-shape images: which shape comes first? **open**
 

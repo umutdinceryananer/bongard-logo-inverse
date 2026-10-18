@@ -125,6 +125,8 @@ A two-shape image is stored as a list of two shape programs. Nothing links the t
 
 No problem mixes 1-shape and 2-shape images.
 
+In 96% of the two-shape images the two shapes are drawn clearly apart. In 3.93% (ff 2.54%, bd 4.67%; all 72,422 two-shape images measured with `scripts/check_1b_shape_overlap.py`) they touch, overlap, or lie within about 24 pixels of each other. The painter keeps the two start points at least 300 canvas units apart but does not check the drawn shapes.
+
 The ff problem ids encode this structure, and the rule holds for all 50,400 ff images. This matches `num_act_lsts` in `generate_ff_problems.py`.
 
 - `ff_nact<a>`: one shape with `a` actions.
