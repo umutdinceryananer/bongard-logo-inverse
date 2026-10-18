@@ -172,6 +172,8 @@ Rate limits: the free tier allows 20 requests per day per model (hit on 2026-10-
 
 Crop check, preliminary result on 18 images (step 2, 2026-10-18): the same 18 images, gemini-3.8-flash, K2, once at native 512 px and once cropped to the ink (decision 2c crop, resized back to 512; the example images are cropped too). Style accuracy under best alignment: all 77.3 to 83.7 (+6.4 points), ff 76.8 to 83.8, bd 58.3 to 66.7 (n=2), hd 100 to 100; exact match 5.6 to 16.7. Below the 10-point rule, but 18 images are within noise either way. The resolution decision is taken on all 150 images (step 3a: K2 at both resolutions), same rule, 10 points.
 
+**Resolution decision (step 3a, 2026-10-19, 150 images, gemini-3.8-flash, K2, corrected scoring):** style accuracy under best alignment 512 px 68.7 against cropped 70.4 (+1.7 points); by type ff 64.5 to 70.7 (+6.2), bd 63.3 to 65.9 (+2.6), hd 87.8 to 78.6 (-9.2); exact match 3.3 to 4.7; action count within 1 83.3 to 86.7; numbers 29.4 to 33.9. The crop helps ff and bd a little and hurts hd; the overall gain is far below the 10-point rule. **The remaining runs (K1, K3, gemini-2.5-flash) use the native 512 px images, no crop.** The crop run is kept as a secondary result (`zeroshot_gemini-3.8-flash_K2_crop.jsonl`).
+
 ## Open questions
 
 - **Does a higher thinking level change the zero-shot result?** The zero-shot test runs at `thinking_level` "low", under which the model still thinks in about half of the calls (up to about 2,000 tokens). A "medium" comparison was not run.
