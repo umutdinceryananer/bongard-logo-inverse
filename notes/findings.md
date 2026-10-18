@@ -34,6 +34,7 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - ff train and val images have 4 to 8 actions; all 8,400 test_ff images have 9.
 - Official splits: train 9,300, val 900, test_ff 600, test_bd 480, test_hd_comb 400, test_hd_novel 320 problems; disjoint; cover all 12,000.
 - Share of shape programs in a split that also occur in train: val 56%, test_bd 69%, test_hd_comb 63%, test_hd_novel 61%, test_ff 11% (a property of the splits, by design of the benchmark).
+- All 627 one-shape bd problems are in train; val and test_bd contain only two-shape bd problems. A bd evaluation therefore measures two-shape images only.
 - Figure: `outputs/figures/03_ff_length_gap.png`.
 - Scripts: `01_inspect.py`, `03_stats.py`. Feeds: Decision 8 (report per split; test_ff measures one skill).
 
