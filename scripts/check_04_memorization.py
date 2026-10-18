@@ -1,25 +1,26 @@
-"""Memorization check for the zero-shot test: new images from programs not in the dataset.
+"""Memorization check for the zero-shot test: images of perturbed dataset programs.
 
 Question: Does the VLM read the drawing, or does it recall programs it may have
           seen, since Bongard-LOGO is public? If accuracy on dataset images is
-          clearly higher than on new images drawn from programs that do not
-          occur in the dataset, memorization is suspected.
-Input:    Train-split statistics of bd and hd (program length, action type and
-          style frequencies, numeric value sets), the bongard painter with the
+          clearly higher than on new images whose programs do not occur in the
+          dataset, memorization is suspected.
+Input:    20 val programs outside the zero-shot sample and its examples (10 bd
+          with two shapes, 10 hd with one shape), the bongard painter with the
           bd and hd settings of the official generator, and the zero-shot
           script (prompt, examples, API, scoring).
 Output:   outputs/logs/memorization/<type>_<i>.png   the new images
-          outputs/logs/memorization/sample.json      their programs and targets
+          outputs/logs/memorization/sample.json      programs, perturbations, targets
           outputs/logs/zeroshot_memcheck_<model>.jsonl  answers and scores (K2)
           A side-by-side table of the same metrics on dataset and new images.
 Decision: 3a (validity of the zero-shot result).
 
-Method: 10 bd images with two shapes and 10 hd images with one shape. Each
-shape is a random valid program: length drawn from the type's train
-distribution, action type and style from the train frequencies, numbers from
-the train value sets, first turn 0.500; a shape is rejected if its program
-occurs anywhere in the dataset or if the painter cannot draw it inside the
-canvas. ff is excluded until the renderer fidelity question is settled.
+Method, as the negative examples of the free-form problems in Nie et al.
+(2020): in each program exactly one action is changed, either its stroke
+style (to another of the five) or its turn (to another value from the type's
+train set; never the first action of a shape, whose turn is the start
+heading). The perturbed shape program must not occur anywhere in the dataset.
+The image is drawn by the painter at a random pose. ff is excluded until the
+renderer fidelity question is settled.
 
 Usage:
   python scripts/check_04_memorization.py generate [--seed S]
@@ -34,7 +35,7 @@ import random
 import statistics
 import sys
 import turtle
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -44,61 +45,57 @@ OUT = ROOT / "outputs" / "logs" / "memorization"
 SAMPLE = OUT / "sample.json"
 PER_TYPE = {"bd": (10, 2), "hd": (10, 1)}  # images, shapes per image
 PAINTER = {"bd": {"scaling": (150, 260), "magnifier": True}, "hd": {"scaling": (150, 320), "magnifier": True}}
+STYLES = ["normal", "zigzag", "circle", "triangle", "square"]
+SIDE_FOLDERS = ["1", "0"]
 
 spec = importlib.util.spec_from_file_location("zeroshot", ROOT / "scripts" / "04_zeroshot.py")
 zs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(zs)
 
 
-def train_statistics(t, programs, train):
-    """Length distribution, action frequencies and value sets of one type in train."""
-    lengths, actions = [], Counter()
-    values = defaultdict(set)
+def train_turns(t, programs, train):
+    turns = set()
     for p, sides in programs.items():
-        if p not in train:
-            continue
-        for side in sides:
-            for img in side:
-                for shape in img:
-                    lengths.append(len(shape))
-                    for a in shape:
-                        kind, style = a.split("_")[:2]
-                        actions[(kind, style)] += 1
-                        nums = a.split("_")[-1] if kind == "line" else "_".join(a.split("_")[2:])
-                        if kind == "line":
-                            length, turn = nums.split("-")
-                            values["line length"].add(length)
-                        else:
-                            radius, rest = nums.split("_")
-                            angle, turn = rest.split("-")
-                            values["arc angle"].add(angle)
-                        values["turn"].add(turn)
-    return lengths, actions, {k: sorted(v) for k, v in values.items()}
+        if p in train:
+            for side in sides:
+                for img in side:
+                    for shape in img:
+                        for a in shape:
+                            turns.add(a.rsplit("-", 1)[1])
+    return sorted(turns)
 
 
-def random_shape(rng, lengths, actions, values):
-    n = rng.choice(lengths)
-    kinds = list(actions)
-    weights = [actions[k] for k in kinds]
-    shape = []
-    for i in range(n):
-        kind, style = rng.choices(kinds, weights)[0]
-        turn = "0.500" if i == 0 else rng.choice(values["turn"])
-        if kind == "line":
-            shape.append(f"line_{style}_{rng.choice(values['line length'])}-{turn}")
+def perturb(rng, program, turns, known):
+    """Change one action's style or turn in one shape; retry until the shape is new to the dataset."""
+    for _ in range(100):
+        new = [list(s) for s in program]
+        si = rng.randrange(len(new))
+        shape = new[si]
+        ai = rng.randrange(len(shape))
+        parts = shape[ai].split("_")
+        kind, style = parts[0], parts[1]
+        if ai == 0 or rng.random() < 0.5:
+            what = "style"
+            parts[1] = rng.choice([s for s in STYLES if s != style])
+            action = "_".join(parts)
         else:
-            shape.append(f"arc_{style}_0.500_{rng.choice(values['arc angle'])}-{turn}")
-    return shape
+            what = "turn"
+            head, turn = shape[ai].rsplit("-", 1)
+            action = head + "-" + rng.choice([v for v in turns if v != turn])
+        shape[ai] = action
+        if tuple(shape) not in known:
+            return new, {"shape": si, "action": ai, "changed": what, "from": program[si][ai], "to": action}
+    raise RuntimeError("could not find a perturbation that is new to the dataset")
 
 
 def cmd_generate(args):
+    import numpy as np
     import bongard.bongard_painter as bongard_painter
     from bongard import BongardImage, BongardProblemPainter
     from PIL import Image
     sys.path.insert(0, str(ROOT / "scripts"))
     from importlib import import_module
-    render_pair = import_module("02_render_pair")
-    render_pair.ensure_ghostscript()
+    import_module("02_render_pair").ensure_ghostscript()
     bongard_painter.Image = SimpleNamespace(open=lambda fp: Image.open(fp).convert("RGB"))
 
     rng = random.Random(args.seed)
@@ -107,34 +104,34 @@ def cmd_generate(args):
     programs = zs.load_programs()
     known = {tuple(shape) for t in programs for sides in programs[t].values() for side in sides for img in side
              for shape in img}
+    zero = json.loads(zs.SAMPLE_FILE.read_text(encoding="utf-8"))
+    excluded = {r["problem"] for r in zero["sample"]} | {e["problem"] for t in zero["examples"] for e in zero["examples"][t]}
     painter = BongardProblemPainter(magnifier_effect=True, random_seed=args.seed)
     OUT.mkdir(parents=True, exist_ok=True)
     sample = []
     for t, (n_images, n_shapes) in PER_TYPE.items():
-        lengths, actions, values = train_statistics(t, programs[t], train)
+        turns = train_turns(t, programs[t], train)
+        pool = [p for p in split["val"] if p.startswith(t + "_") and p not in excluded
+                and len(programs[t][p][0][0]) == n_shapes]
         painter.scaling_factors_range = PAINTER[t]["scaling"]
         painter.bongard_image_painter.magnifier_effect = PAINTER[t]["magnifier"]
         made = 0
-        while made < n_images:
-            program = []
-            while len(program) < n_shapes:
-                shape = random_shape(rng, lengths, actions, values)
-                if tuple(shape) not in known:
-                    program.append(shape)
+        for problem in rng.sample(pool, len(pool)):
+            if made == n_images:
+                break
+            side, index = rng.randrange(2), rng.randrange(7)
+            original = programs[t][problem][side][index]
+            program, change = perturb(rng, original, turns, known)
             label = f"{t}_{made:02d}"
-            image = BongardImage.import_from_action_string_list(program)
-            painter.save_bongard_images([image], image_label=label, bongard_problem_ps_dir=str(OUT / "ps"),
-                                        bongard_problem_png_dir=str(OUT / "png"))
-            # the painter retries the pose up to 300 times; an invalid drawing stays off-canvas, check the ink
+            painter.save_bongard_images([BongardImage.import_from_action_string_list(program)], image_label=label,
+                                        bongard_problem_ps_dir=str(OUT / "ps"), bongard_problem_png_dir=str(OUT / "png"))
             png = OUT / "png" / label / "0.png"
-            from PIL import Image as PILImage
-            import numpy as np
-            ink = (np.asarray(PILImage.open(png).convert("L")) < 128).sum()
-            if ink < 200:
+            if (np.asarray(Image.open(png).convert("L")) < 128).sum() < 200:  # nothing drawn: off canvas
                 continue
             final = OUT / f"{label}.png"
             final.write_bytes(png.read_bytes())
-            sample.append({"type": t, "problem": label, "path": str(final), "program": program,
+            sample.append({"type": t, "problem": label, "source": f"{t}/images/{problem}/{SIDE_FOLDERS[side]}/{index}.png",
+                           "path": str(final), "program": program, "original_program": original, "change": change,
                            "target": zs.to_output_format(program), "n_shapes": n_shapes,
                            "n_actions": sum(len(s) for s in program)})
             made += 1
@@ -143,7 +140,11 @@ def cmd_generate(args):
     except turtle.Terminator:
         pass
     SAMPLE.write_text(json.dumps({"seed": args.seed, "sample": sample}, indent=1), encoding="utf-8")
-    print(f"{len(sample)} new images under {OUT.relative_to(ROOT).as_posix()}; none of their shape programs occurs in the dataset")
+    changed = defaultdict(int)
+    for r in sample:
+        changed[r["change"]["changed"]] += 1
+    print(f"{len(sample)} new images under {OUT.relative_to(ROOT).as_posix()}: one action changed per image "
+          f"({dict(changed)}); no perturbed shape program occurs in the dataset")
 
 
 def cmd_run(args):
@@ -157,7 +158,8 @@ def cmd_run(args):
     with out.open("a", encoding="utf-8") as f:
         if not done:
             f.write(json.dumps({"header": True, "model_requested": args.model, "condition": "K2",
-                                "generation_config": zs.GENERATION_CONFIG, "images": "new, outside the dataset",
+                                "generation_config": zs.GENERATION_CONFIG,
+                                "images": "perturbed val programs drawn by the painter, outside the dataset",
                                 "image_preprocessing": "none, native 512 px"}) + "\n")
         for rec in data["sample"]:
             if rec["path"] in done:
