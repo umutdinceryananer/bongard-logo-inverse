@@ -285,11 +285,16 @@ def build_sample(seed):
         k = SAMPLE_PER_TYPE[t]
         if t == "hd":
             chosen = spread(candidates, k, key=lambda r: (r["n_actions"], r["problem"]))
-        else:  # ff and bd: half one-shape, half two-shape problems, each half spread over length
+        else:  # ff and bd: half one-shape, half two-shape problems, each half spread over length;
+            # if one stratum is too small, the other fills the quota
             chosen = []
             for n_shapes in (1, 2):
                 pool = [r for r in candidates if r["n_shapes"] == n_shapes]
                 chosen += spread(pool, k // 2, key=lambda r: (r["n_actions"], r["problem"]))
+            if len(chosen) < k:
+                taken = {r["problem"] for r in chosen}
+                pool = [r for r in candidates if r["problem"] not in taken]
+                chosen += spread(pool, k - len(chosen), key=lambda r: (r["n_actions"], r["problem"]))
         chosen_problems = {r["problem"] for r in chosen}
         rest = [r for r in candidates if r["problem"] not in chosen_problems]
         examples[t] = rng.sample(rest, EXAMPLES_PER_TYPE)
