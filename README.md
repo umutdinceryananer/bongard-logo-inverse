@@ -48,6 +48,7 @@ outputs/
   logs/                zero-shot outputs, training loss
 notes/
   decision_log.md     one line per day, decision, evidence, open question
+  findings.md         every finding in slide-ready form, the basket for the presentation
   data_layout.md       data layout notes
   decisions.md          the eight decisions
 ```
