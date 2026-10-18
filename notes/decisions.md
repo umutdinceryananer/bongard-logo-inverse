@@ -82,7 +82,17 @@ arc_<style>_<arc_angle>-<turn>
 
 **Evidence:** `data_layout.md` (7 + 7 images per problem; renderer comparison), `findings.md` F2, F3.
 
-### 2b. Problem types in training: **open**
+### 2b. Problem types in training: decided 2026-10-18
+
+Two questions, answered separately.
+
+**Pipeline trial (this week): ff only.** ff is the cheapest and cleanest case to show that the pipeline works: 100 distinct action strings, line length and arc angle constant, short programs. A short run on a few hundred images on the Colab T4 is enough for one type. What the trial can show is "the pipeline works", not "the model works": a model that does well on ff may struggle with the 157 length and 278 turn values of bd and hd. The presentation states this difference.
+
+**Target model (next week): one model, all three types.** C-G tests all three types and the goal is to replace its oracle programs, so the model must cover all three. Separate models per type (c) would mean three trainings and three times the maintenance, and would be less useful for the C-G experiment; the three types share one language (LOGO), the same stroke types and the same number format, which one model learns once and three models would learn three times.
+
+**Risk:** bd, the largest type, could overshadow ff in a joint model. This belongs to Decision 6a (balancing in training), not here. It will show up in the per-type scores (results are reported per type, Decision 8); if it does, balancing is applied.
+
+**Evidence:** `program_statistics.md` (vocabulary and value counts per type), `findings.md` F6, F7, F8.
 
 ### 2c. Input resolution and cropping: **open**
 

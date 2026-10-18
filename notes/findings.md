@@ -81,6 +81,11 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - 168,000 images with 7 poses per program already give the variation that extra drawings would add; drawing ff images is blocked by the renderer mismatch (F3). Revisit if the first training run shows the model does not learn enough.
 - Details: `decisions.md`, 2a.
 
+### D2b. Pipeline trial with ff; target model is one model over all three types
+
+- ff is the cleanest case (100 action strings, constant length and arc angle) to show the pipeline works; the trial does not show the model works on bd and hd (157 length and 278 turn values). The target model covers all three types because C-G tests all three; one shared LOGO language is learned once, not three times. The overshadowing risk is watched per type and handled by balancing (Decision 6) if it appears.
+- Details: `decisions.md`, 2b.
+
 ## Open questions
 
 - Is C-G sensitive to the order of the two shape blocks? To be tested at evaluation level 3 with ground-truth programs in both orders.
