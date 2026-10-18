@@ -70,7 +70,9 @@ SEPARATOR = "|"
 
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions"
 MODELS = {"gemini-2.5-flash": "pixel baseline of Vaishnav and Tammet 2026", "gemini-3.8-flash": "current model"}
-GENERATION_CONFIG = {"temperature": 0, "seed": 0, "max_output_tokens": 2048,
+# max_output_tokens covers the thought tokens too: with 2048 one answer was cut off after
+# about 1,960 thought tokens (pilot, 2026-10-18), so the budget is 8192.
+GENERATION_CONFIG = {"temperature": 0, "seed": 0, "max_output_tokens": 8192,
                      "thinking_level": "low", "thinking_summaries": "none"}
 
 STYLES = ["normal", "zigzag", "circle", "triangle", "square"]
