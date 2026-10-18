@@ -110,7 +110,25 @@ Two questions, answered separately.
 
 **Evidence:** `scripts/fig_2c_resolution.py` (sample of 3,000 hd images with fine styles: ink box longest side p10 118, median 164, p90 222 px; 2.3% at most 100 px), `outputs/figures/2c_resolution.png`.
 
-## 3. Model: **open**
+## 3. Model
+
+### 3a. Model family: **open**, decided by the zero-shot test (2026-10-18)
+
+**Options**
+- (a) Fine-tune a small VLM (about 2B parameters, LoRA, 4-bit, Colab T4).
+- (b) Train a small vision encoder plus program decoder from scratch, with the program vocabulary as the output vocabulary.
+
+**Plan:** run the zero-shot test (3b) first. If the ready-made VLM cannot read the drawings even when the grammar and examples are given in the prompt, the path is (b). The test separates "cannot read the drawing" from "does not know the program language" by putting the grammar and examples in the prompt.
+
+**Evidence so far:** F6, F7, F8 (short programs, small closed vocabulary) favour (b); the advantage of (a) is pretrained vision, whose value on black-and-white line drawings is unknown.
+
+### 3b. Zero-shot model: decided 2026-10-18
+
+**Choice:** Gemini 2.5 Flash, through the API.
+
+**Reasons**
+- It is the pixel baseline of the C-G paper (Vaishnav and Tammet 2026), so our result speaks to the same model: Gemini is near chance on Bongard-LOGO from pixels; can it write the program?
+- Cheap, and an API key is easy to obtain.
 
 ## 4. Model size and training method: **open**
 
