@@ -122,6 +122,18 @@ Two questions, answered separately.
 
 **Evidence so far:** F6, F7, F8 (short programs, small closed vocabulary) favour (b); the advantage of (a) is pretrained vision, whose value on black-and-white line drawings is unknown.
 
+**Preliminary result (2026-10-19, step 3a, gemini-3.8-flash, K2, 150 val images at 512 px, scored with the corrected best-alignment rule; the crop run, K1, K3 and gemini-2.5-flash are still pending):**
+
+| type | n | valid | action count within 1 | style, best alignment | numbers exact, best | exact match | passes baseline + 10? |
+|---|---|---|---|---|---|---|---|
+| ff one shape | 30 | 100 | 90 | 62 | 49 | 7 | yes (baseline 20.6) |
+| ff two shapes | 30 | 100 | 97 | 67 | 62 | 7 | yes |
+| bd | 60 | 100 | 67 | 63 | 8 | 0 | no (baseline 67.5) |
+| hd | 30 | 100 | 97 | 88 | 21 | 3 | yes (baseline 64.9) |
+| all | 150 | 100 | 83 | 69 | 29 | 3 | |
+
+Reading: every answer is well-formed; the action count is right within 1 in 83% (bd 67%); stroke styles are read far above chance in ff and hd, but in bd the model's 63% does not beat the "normal" majority of 67%; numbers (lengths, turns, arc angles) are weak outside ff (8% in bd, 21% in hd); only 5 of 150 programs are exactly right. Under the decision rule two of three types pass, so the direction is "reads the drawings, coarsely". The final verdict waits for the full run.
+
 ### 3b. Zero-shot models: decided 2026-10-18
 
 **Choice:** two models through the Gemini API, same images, same prompts.
