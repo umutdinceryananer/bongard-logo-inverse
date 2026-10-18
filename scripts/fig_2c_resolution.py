@@ -66,6 +66,12 @@ def main():
         measured.append((max(bbox[2] - bbox[0], bbox[3] - bbox[1]), path, gray, bbox, img[0]))
     measured.sort(key=lambda m: m[0])
     rows = measured[:args.rows]
+    sizes = np.array([m[0] for m in measured])
+    print(f"ink box longest side over {len(sizes)} sampled hd images with fine styles: "
+          f"p10 {np.percentile(sizes, 10):.0f}, median {np.median(sizes):.0f}, p90 {np.percentile(sizes, 90):.0f} px; "
+          f"at most 100 px: {100 * (sizes <= 100).mean():.1f}%; at most 150 px: {100 * (sizes <= 150).mean():.1f}%")
+    print(f"after downscaling 512 -> {args.size} without crop, the median shape spans "
+          f"{np.median(sizes) * args.size / 512:.0f} px and the smallest 10% at most {np.percentile(sizes, 10) * args.size / 512:.0f} px")
 
     big, small, gap, pad, text_h = 512, args.size, 16, 16, 22
     font = ImageFont.load_default(size=14)
