@@ -261,13 +261,20 @@ def rotated_shape(shape, k):
 
 def equivalent_forms(shape):
     """All descriptions of the gold shape that draw the same stroke: for closed
-    shapes every start point in both directions, for open shapes both directions."""
+    shapes every start point, and the reversed direction only for shapes made of
+    lines alone. In the painter's language an arc always has a positive radius
+    with its centre on the left, so negating an arc angle draws the mirror image
+    of the arc, not the arc traced backwards; a reversed description with arcs is
+    therefore not the same drawing (checked numerically, 2026-10-19).
+    Returns (form, start index, reversed) triples."""
     forms = []
     starts = range(len(shape)) if is_closed(shape) else [0]
+    reversible = all(a.startswith("line_") for a in shape)
     for k in starts:
         rot = rotated_shape(shape, k)
-        forms.append(rot)
-        forms.append(reversed_shape(rot))
+        forms.append((rot, k, False))
+        if reversible:
+            forms.append((reversed_shape(rot), k, True))
     return forms
 
 
@@ -330,18 +337,19 @@ def score(answer_text, gold_text):
     for pp, gg in pairs:
         if pp is not None and gg is not None:
             assignment[gg[0]] = pp[0]
-    best_distance, best_pairs, best_gold = 0, [], {}
+    best_distance, best_pairs, best_gold, best_forms = 0, [], {}, []
     for gi, gold in enumerate(gold_shapes):
         pi = assignment.get(gi)
         pred = pred_shapes[pi] if pi is not None else []
         choice = None
-        for form in equivalent_forms(gold):
+        for form, start, rev in equivalent_forms(gold):
             d, ap = align(pred, form)
             if choice is None or d < choice[0]:
-                choice = (d, ap, form)
-        d, ap, form = choice
+                choice = (d, ap, form, start, rev)
+        d, ap, form, start, rev = choice
         best_distance += d
         best_gold[gi] = form
+        best_forms.append({"start": start, "reversed": rev})
         best_pairs += [((pi, a) if a is not None and pi is not None else None, (gi, b) if b is not None else None)
                        for a, b in ap]
     for pi in range(len(pred_shapes)):  # predicted shapes without a gold partner
@@ -370,6 +378,7 @@ def score(answer_text, gold_text):
         "edit_distance_best": best_distance,
         "edit_distance_norm": distance / max(len(gold_flat), 1),
         "gold_closed": [is_closed(s) for s in gold_shapes],
+        "best_forms": best_forms,  # per gold shape: which start point and direction matched best
         "pred_actions": len(pred_flat),
         "gold_actions": len(gold_flat),
         "pred_program": pred_text,
