@@ -122,13 +122,13 @@ Two questions, answered separately.
 
 **Evidence so far:** F6, F7, F8 (short programs, small closed vocabulary) favour (b); the advantage of (a) is pretrained vision, whose value on black-and-white line drawings is unknown.
 
-### 3b. Zero-shot model: decided 2026-10-18
+### 3b. Zero-shot models: decided 2026-10-18
 
-**Choice:** Gemini 2.5 Flash, through the API.
+**Choice:** two models through the Gemini API, same images, same prompts.
+- `gemini-2.5-flash`: the pixel baseline of the C-G paper (Vaishnav and Tammet 2026), so the result speaks to the same model: Gemini is near chance on Bongard-LOGO from pixels; can it write the program? Comparability is the only reason to use it. Caveat: the API documentation (checked 2026-10-18) says the 2.5 models are served only to projects that used them before; whether our key can reach it is checked at the first call.
+- `gemini-3.6-flash`: a current model, answering a second question: has the ability of VLMs to read line drawings changed since the paper was written with 2.5? If the two results differ, the paper's finding depends on the model generation.
 
-**Reasons**
-- It is the pixel baseline of the C-G paper (Vaishnav and Tammet 2026), so our result speaks to the same model: Gemini is near chance on Bongard-LOGO from pixels; can it write the program?
-- Cheap, and an API key is easy to obtain.
+Cheap, and an API key is easy to obtain.
 
 ## 4. Model size and training method: **open**
 
