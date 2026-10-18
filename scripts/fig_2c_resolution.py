@@ -5,9 +5,10 @@ Question: When the image is reduced to a typical VLM input size (224 px), do
           a small shape stay legible, and does cropping to the ink help?
 Input:    A random sample of hd images whose program uses at least one fine
           style; the examples with the smallest ink bounding box are shown.
-Output:   outputs/figures/2c_resolution.png, one row per example, at true
-          pixel size: original 512 | downscaled to 224 without crop | cropped
-          to the ink with a 10% margin, then 224. Bounding box sizes on stdout.
+Output:   outputs/figures/2c_resolution.png, one row per example (the smallest
+          ones and the median one), at true pixel size: original 512 |
+          downscaled to 224 without crop | cropped to the ink with a 10%
+          margin, then 224. Bounding box sizes and percentiles on stdout.
 Decision: 2c (input resolution and cropping).
 
 Usage: python scripts/fig_2c_resolution.py [--sample N] [--rows N] [--size 224] [--seed S]
@@ -48,7 +49,7 @@ def crop_to_ink(img, bbox):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sample", type=int, default=3000)
-    parser.add_argument("--rows", type=int, default=4)
+    parser.add_argument("--rows", type=int, default=3, help="number of smallest examples; one median example is added")
     parser.add_argument("--size", type=int, default=224)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
@@ -65,7 +66,8 @@ def main():
         bbox = ink_bbox(gray)
         measured.append((max(bbox[2] - bbox[0], bbox[3] - bbox[1]), path, gray, bbox, img[0]))
     measured.sort(key=lambda m: m[0])
-    rows = measured[:args.rows]
+    # The smallest examples (worst case) plus the median example (typical case).
+    rows = [("smallest", m) for m in measured[:args.rows]] + [("median", measured[len(measured) // 2])]
     sizes = np.array([m[0] for m in measured])
     print(f"ink box longest side over {len(sizes)} sampled hd images with fine styles: "
           f"p10 {np.percentile(sizes, 10):.0f}, median {np.median(sizes):.0f}, p90 {np.percentile(sizes, 90):.0f} px; "
@@ -83,9 +85,10 @@ def main():
     for col, text in enumerate(headers):
         draw.text((pad + col * (big + gap), pad), text, fill="black", font=font)
     y = pad + text_h
-    for longest, path, gray, bbox, actions in rows:
+    for tag, (longest, path, gray, bbox, actions) in rows:
         styles = sorted({a.split("_")[1] for a in actions})
-        label = f"{path.parent.parent.name}/{path.parent.name}/{path.name}   ink box {longest} px   styles: {', '.join(styles)}"
+        label = (f"{tag} example: {path.parent.parent.name}/{path.parent.name}/{path.name}   ink box {longest} px "
+                 f"({longest * small / 512:.0f} px at {small})   styles: {', '.join(styles)}")
         print(label)
         draw.text((pad, y), label, fill="black", font=font)
         y += text_h
