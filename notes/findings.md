@@ -58,6 +58,13 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - Figure: `outputs/figures/03_numeric_values.png`.
 - Script: `03_stats.py`. Feeds: Decisions 1a and 5.
 
+### F9. At a 224 px input, the smallest hd shapes lose their stroke style unless the image is cropped to the ink
+
+- Among hd images with fine styles, the ink box spans median 164 px (p10 118, p90 222) at 512; downscaled to 224 that is 72 px, and at most 52 px for the smallest 10%. In the smallest cases the triangle, circle and square stamps become blobs; cropped to the ink with a 10% margin they stay legible.
+- Fine styles (zigzag, circle, square, triangle) are 35% of hd actions, 33% of bd, 80% of ff.
+- Figure: `outputs/figures/2c_resolution.png` (original 512 | 224 no crop | cropped then 224, at true pixel size).
+- Script: `fig_2c_resolution.py`. Feeds: Decision 2c.
+
 ## Decisions taken
 
 ### D1a. Output format: the dataset strings with the arc radius removed
@@ -85,6 +92,11 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 
 - ff is the cleanest case (100 action strings, constant length and arc angle) to show the pipeline works; the trial does not show the model works on bd and hd (157 length and 278 turn values). The target model covers all three types because C-G tests all three; one shared LOGO language is learned once, not three times. The overshadowing risk is watched per type and handled by balancing (Decision 6) if it appears.
 - Details: `decisions.md`, 2b.
+
+### D2c. Resolution depends on the model; at 224 px input the image is cropped to the ink
+
+- Input 448 px or more: image as it is. Input 224 px: square crop around the ink with a 10% proportional margin, same at test time. Cropping removes nothing the model predicts (no pose in the program) and keeps the relative placement of two shapes.
+- Evidence: F9. Details: `decisions.md`, 2c.
 
 ## Open questions
 

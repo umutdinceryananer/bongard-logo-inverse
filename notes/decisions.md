@@ -94,7 +94,20 @@ Two questions, answered separately.
 
 **Evidence:** `program_statistics.md` (vocabulary and value counts per type), `findings.md` F6, F7, F8.
 
-### 2c. Input resolution and cropping: **open**
+### 2c. Input resolution and cropping: decided 2026-10-18, conditional on the model
+
+**Options:** feed the 512 px image as it is (the model resizes it to its input size), or crop to the ink first. Downscaling ourselves is the same as feeding it as is.
+
+**Choice:** depends on the input size of the model chosen in Decision 3.
+- Input 448 px or more: the image as it is. A 137 px shape stays about 120 px.
+- Input 224 px: crop to the ink first. Square crop around the ink bounding box, margin 10% of the longer side on each side (a proportion, not a pixel count, so large and small shapes are treated alike), white padding where the crop leaves the image, then resize to the input size. The same crop is applied at test time.
+
+**Reasons**
+- Position and scale are not in the program (Decision 1), the renderer assigns them at random, so cropping removes nothing the model has to predict. The two shapes of a two-shape image are cropped together, so their relative placement is kept.
+- At 224 px without cropping, the median hd shape with fine styles spans 72 px and the smallest 10% at most 52 px; in the smallest cases the triangle, circle and square stamps and the zigzag become indistinguishable blobs, while the cropped version stays legible (`outputs/figures/2c_resolution.png`, true pixel size).
+- Fine styles (zigzag and the three stamps) are the ones at risk; plain lines are not. Fine styles make up about 35% of hd actions, 33% of bd and 80% of ff (`program_statistics.md`, section 2), so the loss would not be marginal.
+
+**Evidence:** `scripts/fig_2c_resolution.py` (sample of 3,000 hd images with fine styles: ink box longest side p10 118, median 164, p90 222 px; 2.3% at most 100 px), `outputs/figures/2c_resolution.png`.
 
 ## 3. Model: **open**
 
