@@ -180,6 +180,95 @@ def align(pred, gold):
     return d[n][m], pairs[::-1]
 
 
+def simulate(shape):
+    """Turtle simulation of one shape (unit length, arc radius 0.5): end point,
+    total heading change and path length. Positions in unit lengths."""
+    import math
+    x = y = 0.0
+    heading = 0.0  # degrees, left positive
+    total_turn = length = 0.0
+    for line in shape:
+        p = parse_action(line)
+        if p is None:
+            continue
+        kind, _, (v, turn) = p
+        turn_deg = turn * 360 - 180
+        heading += turn_deg
+        total_turn += turn_deg
+        if kind == "line":
+            x += v * math.cos(math.radians(heading))
+            y += v * math.sin(math.radians(heading))
+            length += v
+        else:  # arc of radius 0.5, extent v*720-360 degrees, centre to the left of the heading
+            r, extent = 0.5, v * 720 - 360
+            cx = x - r * math.sin(math.radians(heading))
+            cy = y + r * math.cos(math.radians(heading))
+            dx, dy = x - cx, y - cy
+            e = math.radians(extent)
+            x = cx + dx * math.cos(e) - dy * math.sin(e)
+            y = cy + dx * math.sin(e) + dy * math.cos(e)
+            heading += extent
+            total_turn += extent
+            length += abs(e) * r
+    return (x, y), heading, total_turn, length
+
+
+CLOSED_TOLERANCE = 0.05  # closed if the end point lies within 5% of the path length from the start
+
+
+def is_closed(shape):
+    (x, y), _, _, length = simulate(shape)
+    return length > 0 and (x * x + y * y) ** 0.5 <= CLOSED_TOLERANCE * length
+
+
+def with_turn(line, turn):
+    p = parse_action(line)
+    kind, style, (v, _) = p
+    return f"{kind}_{style}_{v:.3f}-{turn:.3f}"
+
+
+def reversed_shape(shape):
+    """The same stroke traced in the opposite direction: actions in reverse
+    order, arc angles negated (a -> 1-a), junction turns negated and shifted."""
+    acts = [parse_action(a) for a in shape]
+    if any(a is None for a in acts):
+        return list(reversed(shape))
+    out = []
+    n = len(acts)
+    for j in range(n - 1, -1, -1):
+        kind, style, (v, _) = acts[j]
+        v2 = v if kind == "line" else round(1 - v, 3)
+        turn = 0.5 if j == n - 1 else round(1 - acts[j + 1][2][1], 3)
+        out.append(f"{kind}_{style}_{v2:.3f}-{turn:.3f}")
+    return out
+
+
+def rotated_shape(shape, k):
+    """Closed shape started at action k: the closing junction turn becomes the
+    turn of the former first action."""
+    if k == 0 or any(parse_action(a) is None for a in shape):
+        return list(shape)
+    _, heading, _, _ = simulate(shape)
+    closing = (-heading + 180) % 360 - 180            # turn needed at the closing junction, degrees
+    closing_turn = round((closing + 180) / 360, 3)
+    rot = shape[k:] + shape[:k]
+    rot[0] = with_turn(rot[0], 0.5)
+    rot[len(shape) - k] = with_turn(rot[len(shape) - k], closing_turn)
+    return rot
+
+
+def equivalent_forms(shape):
+    """All descriptions of the gold shape that draw the same stroke: for closed
+    shapes every start point in both directions, for open shapes both directions."""
+    forms = []
+    starts = range(len(shape)) if is_closed(shape) else [0]
+    for k in starts:
+        rot = rotated_shape(shape, k)
+        forms.append(rot)
+        forms.append(reversed_shape(rot))
+    return forms
+
+
 def match_shapes(pred_shapes, gold_shapes):
     """Pair predicted shapes with gold shapes so that the total action-level edit
     distance is smallest (all assignments are tried; images have at most two
@@ -214,18 +303,52 @@ def score(answer_text, gold_text):
     pred_flat = [a for s in pred_shapes for a in s]
     gold_flat = [a for s in gold_shapes for a in s]
     distance, pairs = match_shapes(pred_shapes, gold_shapes)
-    kind_ok = style_ok = num_ok = num_tol = 0
-    for pp, gg in pairs:
-        if pp is None or gg is None:
-            continue
-        p, g = parse_action(pred_shapes[pp[0]][pp[1]]), parse_action(gold_shapes[gg[0]][gg[1]])
-        if p is None:
-            continue
-        kind_ok += p[0] == g[0]
-        style_ok += p[1] == g[1]
-        num_ok += p[2] == g[2]
-        num_tol += all(abs(x - y) <= 0.02 for x, y in zip(p[2], g[2]))
+
+    def field_counts(pairs, gold_lookup):
+        kind_ok = style_ok = num_ok = num_tol = 0
+        for pp, gg in pairs:
+            if pp is None or gg is None:
+                continue
+            p, g = parse_action(pred_shapes[pp[0]][pp[1]]), parse_action(gold_lookup[gg[0]][gg[1]])
+            if p is None:
+                continue
+            kind_ok += p[0] == g[0]
+            style_ok += p[1] == g[1]
+            num_ok += p[2] == g[2]
+            num_tol += all(abs(x - y) <= 0.02 for x, y in zip(p[2], g[2]))
+        return kind_ok, style_ok, num_ok, num_tol
+
+    # Column 1, "given order": the gold program as written.
+    kind_ok, style_ok, num_ok, num_tol = field_counts(pairs, gold_shapes)
     columns = len(pairs)  # matched pairs plus unmatched actions on either side
+
+    # Column 2, "best alignment": for each paired shape, the equivalent description
+    # of the gold shape (start point and direction) with the smallest edit distance.
+    assignment = {}
+    for pp, gg in pairs:
+        if pp is not None and gg is not None:
+            assignment[gg[0]] = pp[0]
+    best_distance, best_pairs, best_gold = 0, [], {}
+    for gi, gold in enumerate(gold_shapes):
+        pi = assignment.get(gi)
+        pred = pred_shapes[pi] if pi is not None else []
+        choice = None
+        for form in equivalent_forms(gold):
+            d, ap = align(pred, form)
+            if choice is None or d < choice[0]:
+                choice = (d, ap, form)
+        d, ap, form = choice
+        best_distance += d
+        best_gold[gi] = form
+        best_pairs += [((pi, a) if a is not None and pi is not None else None, (gi, b) if b is not None else None)
+                       for a, b in ap]
+    for pi in range(len(pred_shapes)):  # predicted shapes without a gold partner
+        if pi not in assignment.values():
+            best_distance += len(pred_shapes[pi])
+            best_pairs += [((pi, a), None) for a in range(len(pred_shapes[pi]))]
+    b_kind, b_style, b_num, b_tol = field_counts(best_pairs, best_gold)
+    b_columns = len(best_pairs)
+
     pred_text = "\n|\n".join("\n".join(s) for s in pred_shapes)
     return {
         "valid": invalid == 0 and len(pred_flat) > 0,
@@ -236,9 +359,15 @@ def score(answer_text, gold_text):
         "style_acc": style_ok / columns if columns else 0.0,
         "number_acc": num_ok / columns if columns else 0.0,
         "number_acc_tol": num_tol / columns if columns else 0.0,
+        "kind_acc_best": b_kind / b_columns if b_columns else 0.0,
+        "style_acc_best": b_style / b_columns if b_columns else 0.0,
+        "number_acc_best": b_num / b_columns if b_columns else 0.0,
+        "number_acc_tol_best": b_tol / b_columns if b_columns else 0.0,
         "exact": pred_text == gold_text,
         "edit_distance": distance,
+        "edit_distance_best": best_distance,
         "edit_distance_norm": distance / max(len(gold_flat), 1),
+        "gold_closed": [is_closed(s) for s in gold_shapes],
         "pred_actions": len(pred_flat),
         "gold_actions": len(gold_flat),
         "pred_program": pred_text,
@@ -419,6 +548,10 @@ def cmd_run(args):
             if "path" in rec:
                 done.add(rec["path"])
     records = [r for r in data["sample"] if r["path"] not in done]
+    if args.same_as:  # restrict to the images already answered in another results file
+        wanted = [json.loads(l)["path"] for l in Path(args.same_as).read_text(encoding="utf-8").splitlines()
+                  if "\"path\"" in l]
+        records = [r for r in records if r["path"] in set(wanted)]
     # Round-robin over (type, shape count) so that a partial run mixes types and shape counts.
     groups = defaultdict(list)
     for r in records:
@@ -441,6 +574,10 @@ def cmd_run(args):
                                        if args.crop else "none, native 512 px",
                 "image_resolution_note": "resolution=high; per the API documentation the API tiles images above "
                                          "384 px into 768 px tiles and does not downscale a 512 px image",
+                "closed_shape_rule": f"a gold shape is closed if its simulated end point (unit length, arc radius "
+                                     f"0.5, turn before each action) lies within {CLOSED_TOLERANCE:.0%} of the "
+                                     "path length from its start point; best-alignment metrics try every start "
+                                     "point and both directions for closed shapes, both directions for open ones",
                 "started": datetime.now(timezone.utc).isoformat(timespec="seconds")}) + "\n")
         for k, rec in enumerate(records, 1):
             response, latency = call_model(key, args.model,
@@ -453,8 +590,9 @@ def cmd_run(args):
             f.write(json.dumps(row) + "\n")
             f.flush()
             print(f"  [{k}/{len(records)}] {rec['path']}: valid={s['valid']} shapes_ok={s['shape_count_ok']} "
-                  f"count+-1={s['action_count_within_1']} style={s['style_acc']:.2f} num={s['number_acc']:.2f} "
-                  f"exact={s['exact']} ed={s['edit_distance']}")
+                  f"count+-1={s['action_count_within_1']} style={s['style_acc']:.2f}/{s['style_acc_best']:.2f} "
+                  f"num={s['number_acc']:.2f}/{s['number_acc_best']:.2f} exact={s['exact']} "
+                  f"ed={s['edit_distance']}/{s['edit_distance_best']}")
             if args.show:
                 print("    --- answer ---"); print("    " + text.replace("\n", "\n    "))
                 print("    --- target ---"); print("    " + rec["target"].replace("\n", "\n    "))
@@ -463,19 +601,50 @@ def cmd_run(args):
 # Summary ------------------------------------------------------------------------------------
 
 METRICS = [("valid", "1. valid output (%)"), ("shape_count_ok", "2. shape count correct (%)"),
-           ("action_count_within_1", "3. action count within +/-1 (%)"), ("kind_acc", "4a. action type accuracy (%)"),
-           ("style_acc", "4b. style accuracy (%)"), ("number_acc", "4c. number accuracy, exact (%)"),
-           ("number_acc_tol", "4d. number accuracy, tolerance 0.02 (%)"), ("exact", "5. exact match (%)"),
-           ("edit_distance", "6. edit distance (actions, mean)")]
-BASELINES = {"style_acc": "random 20, majority class (normal) 55"}
+           ("action_count_within_1", "3. action count within +/-1 (%)"),
+           ("kind_acc", "4a. action type accuracy, given order (%)"),
+           ("kind_acc_best", "4a'. action type accuracy, best alignment (%)"),
+           ("style_acc", "4b. style accuracy, given order (%)"),
+           ("style_acc_best", "4b'. style accuracy, best alignment (%)"),
+           ("number_acc", "4c. number accuracy exact, given order (%)"),
+           ("number_acc_best", "4c'. number accuracy exact, best alignment (%)"),
+           ("number_acc_tol", "4d. number accuracy within 0.02, given order (%)"),
+           ("number_acc_tol_best", "4d'. number accuracy within 0.02, best alignment (%)"),
+           ("exact", "5. exact match (%)"),
+           ("edit_distance", "6. edit distance, given order (actions, mean)"),
+           ("edit_distance_best", "6'. edit distance, best alignment (actions, mean)")]
+COUNT_METRICS = {"edit_distance", "edit_distance_best"}
+DECISION_MARGIN = 10.0  # style accuracy must exceed the type's majority-class baseline by this many points
+
+
+def style_baselines():
+    """Majority stroke-style share per type in the train split (the baseline the decision rule uses)."""
+    split = json.loads((DATA / "ShapeBongard_V2_split.json").read_text())
+    train = set(split["train"])
+    out = {}
+    for t, programs in load_programs().items():
+        c = defaultdict(int)
+        for p, sides in programs.items():
+            if p in train:
+                for side in sides:
+                    for img in side:
+                        for shape in img:
+                            for a in shape:
+                                c[a.split("_")[1]] += 1
+        total = sum(c.values())
+        style, n = max(c.items(), key=lambda kv: kv[1])
+        out[t] = (style, 100 * n / total)
+    return out
 
 
 def aggregate(rows):
     out = {}
     for key, _ in METRICS:
-        vals = [float(r[key]) for r in rows]
-        out[key] = statistics.mean(vals) * (100 if key != "edit_distance" else 1) if vals else float("nan")
+        vals = [float(r.get(key, float("nan"))) for r in rows]
+        out[key] = statistics.mean(vals) * (1 if key in COUNT_METRICS else 100) if vals else float("nan")
     out["n"] = len(rows)
+    thoughts = [r["usage"]["total_thought_tokens"] for r in rows if r.get("usage")]
+    out["thought_tokens_mean"] = statistics.mean(thoughts) if thoughts else float("nan")
     return out
 
 
@@ -497,26 +666,58 @@ def cmd_summary(args):
     if not groups:
         sys.exit("no results yet")
     keys = sorted(groups)
+    baselines = style_baselines()
     with (LOG / "zeroshot_summary.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["model", "condition", "type", "n"] + [k for k, _ in METRICS])
+        w.writerow(["model", "condition", "type", "n"] + [k for k, _ in METRICS] + ["thought_tokens_mean"])
         for model, cond, t in keys:
             a = aggregate(groups[(model, cond, t)])
-            w.writerow([model, cond, t, a["n"]] + [f"{a[k]:.1f}" for k, _ in METRICS])
+            w.writerow([model, cond, t, a["n"]] + [f"{a[k]:.1f}" for k, _ in METRICS] + [f"{a['thought_tokens_mean']:.1f}"])
     columns = [(m, c) for m, c, t in keys if t == "all"]
-    lines = ["| metric | " + " | ".join(f"{m} {c} (n={aggregate(groups[(m, c, 'all')])['n']})" for m, c in columns) + " |",
+    agg = {mc: aggregate(groups[(mc[0], mc[1], "all")]) for mc in columns}
+    lines = ["| metric | " + " | ".join(f"{m} {c} (n={agg[(m, c)]['n']})" for m, c in columns) + " |",
              "|---|" + "---|" * len(columns)]
     for key, label in METRICS:
-        lines.append(f"| {label} | " + " | ".join(f"{aggregate(groups[(m, c, 'all')])[key]:.1f}" for m, c in columns) + " |")
-    lines.append("| baseline, style accuracy | " + " | ".join(BASELINES["style_acc"] for _ in columns) + " |")
+        lines.append(f"| {label} | " + " | ".join(f"{agg[mc][key]:.1f}" for mc in columns) + " |")
+    lines.append("| style accuracy, best minus given (points) | "
+                 + " | ".join(f"{agg[mc]['style_acc_best'] - agg[mc]['style_acc']:.1f}" for mc in columns) + " |")
+    lines.append("| thought tokens, mean | " + " | ".join(f"{agg[mc]['thought_tokens_mean']:.0f}" for mc in columns) + " |")
+    lines.append("| baseline, style accuracy: random | " + " | ".join("20.0" for _ in columns) + " |")
+    for t in TYPES:
+        lines.append(f"| baseline, style accuracy: majority in train, {t} ({baselines[t][0]}) | "
+                     + " | ".join(f"{baselines[t][1]:.1f}" for _ in columns) + " |")
     lines.append("")
-    lines.append("Per type (style accuracy / action count within 1 / exact):")
+    lines.append("Per type: style accuracy best alignment / given order | action count within 1 | exact | "
+                 "passes its baseline + 10 points?")
     for model, cond, t in keys:
-        if t != "all":
-            a = aggregate(groups[(model, cond, t)])
-            lines.append(f"- {model} {cond} {t} (n={a['n']}): {a['style_acc']:.1f} / {a['action_count_within_1']:.1f} / {a['exact']:.1f}")
+        if t == "all":
+            continue
+        a = aggregate(groups[(model, cond, t)])
+        base = baselines[t.split("_")[0]][1]
+        verdict = "yes" if a["style_acc_best"] >= base + DECISION_MARGIN else "no"
+        lines.append(f"- {model} {cond} {t} (n={a['n']}): {a['style_acc_best']:.1f} / {a['style_acc']:.1f} | "
+                     f"{a['action_count_within_1']:.1f} | {a['exact']:.1f} | {verdict} (baseline {base:.1f})")
+    lines.append("")
+    lines.append("Decision rule (3a): 'cannot read' only if, in every type, style accuracy (best alignment) is "
+                 "below the type's majority baseline + 10 points and action count within 1 is below 50%.")
     (LOG / "zeroshot_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
+
+
+def cmd_rescore(args):
+    """Recompute the scores of every stored answer (after a change to the scoring code)."""
+    for f in sorted(LOG.glob("zeroshot_*_K*.jsonl")):
+        lines = f.read_text(encoding="utf-8").splitlines()
+        out = []
+        for line in lines:
+            rec = json.loads(line)
+            if "path" in rec:
+                keep = {k: rec[k] for k in ("path", "type", "problem", "target", "answer", "model_reported",
+                                            "usage", "latency_s")}
+                rec = {**keep, **score(rec["answer"], rec["target"])}
+            out.append(json.dumps(rec))
+        f.write_text("\n".join(out) + "\n", encoding="utf-8")
+        print(f"rescored {f.name}: {sum('\"path\"' in l for l in lines)} answers")
 
 
 def main():
@@ -529,8 +730,10 @@ def main():
     p.add_argument("--limit", type=int, default=0, help="run only the first N remaining images")
     p.add_argument("--show", action="store_true", help="print each answer and target")
     p.add_argument("--crop", action="store_true", help="crop every image to the ink (decision 2c) before sending")
+    p.add_argument("--same-as", help="run only the images already answered in this results file")
     p.set_defaults(func=cmd_run)
     p = sub.add_parser("summary"); p.set_defaults(func=cmd_summary)
+    p = sub.add_parser("rescore"); p.set_defaults(func=cmd_rescore)
     args = parser.parse_args()
     args.func(args)
 
