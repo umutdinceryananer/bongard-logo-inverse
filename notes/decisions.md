@@ -138,7 +138,15 @@ Cheap, and an API key is easy to obtain.
 
 ## 7. Hyperparameters: **open**
 
-## 8. Evaluation: **open**
+## 8. Evaluation: **open** except 8b
+
+### 8b. Program-level metrics, as used in the zero-shot test: decided 2026-10-18
+
+Per answer: (1) valid output, every line matches the grammar; (2) shape count correct; (3) action count within plus or minus 1 of the truth; (4) action-level accuracy of type, style and numbers, separately, numbers both exact and within 0.02; (5) exact match of the normalized program; (6) action-level edit distance. Baselines for style accuracy: random 20%, majority class (normal) 55%.
+
+How (4) and (6) are computed: the predicted shapes are paired with the true shapes by the assignment with the smallest total action-level Levenshtein distance (images have at most two shapes, so all assignments are tried); within each pair the actions are aligned by Levenshtein at the action level; aligned pairs are compared field by field; unaligned actions count as wrong for all three fields. This deviates from the design text, which paired shapes by the canonical order: a single missing action can change the canonical order and would then misalign every action of both shapes. Exact match (5) still compares the canonical-order strings. Implementation: `scripts/04_zeroshot.py`, `score()`.
+
+Decision rule for 3a, fixed before the run: "cannot read" if style accuracy is below 65% and action-count-within-1 accuracy is below 50%.
 
 ## Open questions
 
