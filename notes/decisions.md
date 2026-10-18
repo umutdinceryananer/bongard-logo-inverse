@@ -46,7 +46,23 @@ arc_<style>_<arc_angle>-<turn>
 
 **Check (2026-10-18): do the two shapes ever touch or overlap?** Yes, in a small minority. The painter only enforces a minimum distance between the two start points (300 canvas units), not between the drawn shapes. Measured on all 72,422 two-shape images (`scripts/check_1b_shape_overlap.py`): the ink forms a single group in 3.93% of them (ff 2.54%, bd 4.67%), which means the shapes touch, overlap, or lie within about 24 pixels of each other; in the remaining 96% the two shapes are clearly apart. Control: one-shape images fall apart into two groups in only 0.17% of cases, so the method itself is reliable. Examples in `outputs/figures/1b_touching_examples.png` (a check figure, not for slides) show mostly real overlaps and a few near misses. The decision stands; the touching cases are a harder minority for the model, not a reason to change the output format.
 
-### 1c. Two-shape images: which shape comes first? **open**
+### 1c. Two-shape images: which shape comes first? Decided 2026-10-18
+
+**Options**
+- (a) Keep the dataset order as the training target and accept both orders when scoring.
+- (b) A fixed order derived from the program text, applied to the training targets and to both sides before scoring.
+- (c) An order derived from the image (for example left shape first). Needs each program shape matched to a drawn shape, for which there is no label; too much work for no gain.
+
+**Choice:** (b), with the rule: the shape with fewer actions first; if both have the same number of actions, the one whose string sorts first alphabetically.
+
+**Reasons, three pieces of evidence**
+- The dataset order is arbitrary. The same pair of shapes (stroke style ignored) recurs in other problems in both orders: ff 321 of 1,321 recurring pairs (24%), bd 400 of 1,522 (26%). Within one problem the order is fixed only because the images come from the same generation; in bd it follows the concept name X-Y, and no name exists as Y-X. The only partial rule is in ff, where the first shape is never longer than the second; in the 8,400 ff images with two equal-length shapes there is no rule at all.
+- The renderer does not use the order for the shape content. Each shape is drawn from its own randomly sampled position, orientation and scale, so changing the order changes nothing about the shapes; in the render-level evaluation the poses are fixed per shape by us.
+- The 20-point drop in the C-G paper under "sequence permutation" (FF 78.1 to 58.0, BD 68.8 to 64.2) concerns the order of the strokes inside the query program. The fixed order leaves the strokes of each shape untouched; only the two shape blocks may swap. The sensitivity of C-G to the order of the shape blocks has not been tested (see Open questions).
+
+(a) would also work; models cope with two-way targets, only more slowly. (b) is simpler and removes the ambiguity. The chosen rule coincides with the dataset order in all 16,800 ff images with unequal shapes and in 57% of bd two-shape images.
+
+**Evidence:** `scripts/check_1c_shape_order.py` (report in `outputs/logs/1c_shape_order.txt`); Vaishnav and Tammet 2026, section 5.5.
 
 ## 2. Images: **open**
 
@@ -61,3 +77,7 @@ arc_<style>_<arc_angle>-<turn>
 ## 7. Hyperparameters: **open**
 
 ## 8. Evaluation: **open**
+
+## Open questions
+
+- **Is C-G sensitive to the order of the two shape blocks?** The paper only tested shuffling the strokes inside a program. To test at evaluation level 3: run C-G on ground-truth programs twice, once in the dataset order and once in the fixed order of decision 1c, on the same problems, and compare accuracy. If the difference is large, the fixed order should be reconsidered or the dataset order restored before the C-G step (the mapping is one-to-one, so restoring is possible when the original order is known).
