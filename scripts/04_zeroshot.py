@@ -419,6 +419,12 @@ def cmd_run(args):
             if "path" in rec:
                 done.add(rec["path"])
     records = [r for r in data["sample"] if r["path"] not in done]
+    # Round-robin over (type, shape count) so that a partial run mixes types and shape counts.
+    groups = defaultdict(list)
+    for r in records:
+        groups[(r["type"], r["n_shapes"])].append(r)
+    order = [groups[k] for k in sorted(groups)]
+    records = [g[i] for i in range(max((len(g) for g in order), default=0)) for g in order if i < len(g)]
     if args.limit:
         records = records[:args.limit]
     print(f"{args.model} {args.condition}: {len(done)} done, running {len(records)}")
