@@ -333,13 +333,35 @@ def api_key():
     return key
 
 
-def image_item(path):
-    data = base64.b64encode((DATA / path).read_bytes()).decode()
-    return {"type": "image", "data": data, "mime_type": "image/png", "resolution": "high"}
+def crop_to_ink(path, margin=0.10, size=512):
+    """Decision 2c crop: square around the ink bounding box with a proportional
+    margin, white padding outside the image, resized back to 512 px so that the
+    pixel count sent to the API is the same as without the crop."""
+    import numpy as np
+    from PIL import Image
+    img = Image.open(DATA / path).convert("L")
+    ys, xs = np.nonzero(np.asarray(img) < 128)
+    x0, y0, x1, y1 = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+    side = int(round(max(x1 - x0, y1 - y0) * (1 + 2 * margin)))
+    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+    out = Image.new("L", (side, side), 255)
+    out.paste(img.crop((cx - side // 2, cy - side // 2, cx - side // 2 + side, cy - side // 2 + side)), (0, 0))
+    return out.resize((size, size), Image.BICUBIC)
 
 
-def build_input(record, condition, examples):
-    """Content items for one query under one condition."""
+def image_item(path, crop=False):
+    if crop:
+        import io
+        buf = io.BytesIO()
+        crop_to_ink(path).save(buf, format="PNG")
+        raw = buf.getvalue()
+    else:
+        raw = (DATA / path).read_bytes()
+    return {"type": "image", "data": base64.b64encode(raw).decode(), "mime_type": "image/png", "resolution": "high"}
+
+
+def build_input(record, condition, examples, crop=False):
+    """Content items for one query under one condition; the crop applies to every image sent."""
     t = record["type"]
     items = []
     if condition == "K1":
@@ -350,10 +372,10 @@ def build_input(record, condition, examples):
         items.append({"type": "text", "text": "Three examples, each an image followed by its program."})
         for e in examples[source]:
             items.append({"type": "text", "text": "Image:"})
-            items.append(image_item(e["path"]))
+            items.append(image_item(e["path"], crop))
             items.append({"type": "text", "text": "Program:\n" + e["target"]})
     items.append({"type": "text", "text": "Now write the program of this image.\nImage:"})
-    items.append(image_item(record["path"]))
+    items.append(image_item(record["path"], crop))
     items.append({"type": "text", "text": "Program:"})
     return items
 
@@ -389,7 +411,7 @@ def cmd_run(args):
         sys.exit("run `sample` first")
     key = api_key()
     data = json.loads(SAMPLE_FILE.read_text(encoding="utf-8"))
-    out = LOG / f"zeroshot_{args.model}_{args.condition}.jsonl"
+    out = LOG / f"zeroshot_{args.model}_{args.condition}{'_crop' if args.crop else ''}.jsonl"
     done = set()
     if out.exists():
         for line in out.read_text(encoding="utf-8").splitlines():
@@ -402,13 +424,21 @@ def cmd_run(args):
     print(f"{args.model} {args.condition}: {len(done)} done, running {len(records)}")
     with out.open("a", encoding="utf-8") as f:
         if not done:
-            f.write(json.dumps({"header": True, "endpoint": ENDPOINT, "model_requested": args.model,
-                                "generation_config": GENERATION_CONFIG, "image_resolution": "native 512 px, "
-                                "resolution=high; the API tiles images above 384 px and does not downscale",
-                                "condition": args.condition, "started": datetime.now(timezone.utc).isoformat(
-                                    timespec="seconds")}) + "\n")
+            f.write(json.dumps({
+                "header": True, "endpoint": ENDPOINT, "api_version": "v1beta", "model_requested": args.model,
+                "condition": args.condition, "seed": GENERATION_CONFIG["seed"],
+                "thinking_level": GENERATION_CONFIG["thinking_level"],
+                "temperature": f"{GENERATION_CONFIG['temperature']} requested; ignored by Gemini 3.6 and later "
+                               "according to the API documentation (checked 2026-10-18)",
+                "generation_config": GENERATION_CONFIG,
+                "image_preprocessing": "crop to the ink, 10% proportional margin, square, resized to 512 px"
+                                       if args.crop else "none, native 512 px",
+                "image_resolution_note": "resolution=high; per the API documentation the API tiles images above "
+                                         "384 px into 768 px tiles and does not downscale a 512 px image",
+                "started": datetime.now(timezone.utc).isoformat(timespec="seconds")}) + "\n")
         for k, rec in enumerate(records, 1):
-            response, latency = call_model(key, args.model, build_input(rec, args.condition, data["examples"]))
+            response, latency = call_model(key, args.model,
+                                           build_input(rec, args.condition, data["examples"], args.crop))
             text = answer_text(response)
             s = score(text, rec["target"])
             row = {"path": rec["path"], "type": rec["type"], "problem": rec["problem"], "target": rec["target"],
@@ -446,12 +476,18 @@ def aggregate(rows):
 def cmd_summary(args):
     groups = defaultdict(list)
     for f in sorted(LOG.glob("zeroshot_*_K*.jsonl")):
-        model, cond = f.stem[len("zeroshot_"):].rsplit("_", 1)
+        m = re.match(r"zeroshot_(.+)_(K[123])(_crop)?$", f.stem)
+        if not m:
+            continue
+        model, cond = m.group(1), m.group(2) + (m.group(3) or "")
         for line in f.read_text(encoding="utf-8").splitlines():
             rec = json.loads(line)
             if "path" in rec:
                 groups[(model, cond, rec["type"])].append(rec)
                 groups[(model, cond, "all")].append(rec)
+                if rec["type"] == "ff":  # ff split by shape count, to read next to bd (two-shape only)
+                    n_shapes = rec["target"].count("\n|\n") + 1
+                    groups[(model, cond, f"ff_{n_shapes}shape")].append(rec)
     if not groups:
         sys.exit("no results yet")
     keys = sorted(groups)
@@ -486,6 +522,7 @@ def main():
     p.add_argument("--condition", required=True, choices=["K1", "K2", "K3"])
     p.add_argument("--limit", type=int, default=0, help="run only the first N remaining images")
     p.add_argument("--show", action="store_true", help="print each answer and target")
+    p.add_argument("--crop", action="store_true", help="crop every image to the ink (decision 2c) before sending")
     p.set_defaults(func=cmd_run)
     p = sub.add_parser("summary"); p.set_defaults(func=cmd_summary)
     args = parser.parse_args()
