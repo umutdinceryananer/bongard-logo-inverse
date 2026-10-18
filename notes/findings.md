@@ -60,9 +60,10 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 
 ### F9. At a 224 px input, the smallest hd shapes lose their stroke style unless the image is cropped to the ink
 
-- Among hd images with fine styles, the ink box spans median 164 px (p10 118, p90 222) at 512; downscaled to 224 that is 72 px, and at most 52 px for the smallest 10%. In the smallest cases the triangle, circle and square stamps become blobs; cropped to the ink with a 10% margin they stay legible.
-- Fine styles (zigzag, circle, square, triangle) are 35% of hd actions, 33% of bd, 80% of ff.
-- Figure: `outputs/figures/2c_resolution.png` (original 512 | 224 no crop | cropped then 224, at true pixel size).
+- One measure throughout: the longer side of the ink bounding box. Among hd images with fine styles it is median 164 px at 512 (p10 118, p90 222); downscaled to 224 the median shape spans 72 px, the smallest 10% at most 52 px, the smallest examples 29 px. In the smallest cases the triangle, circle and square stamps become blobs; cropped to the ink with a 10% margin they stay legible. The median example stays readable without cropping but small.
+- Cropping loses no information, because the program contains no position and no size.
+- Fine styles (zigzag, circle, square, triangle) are 35% of hd actions, 33% of bd, 80% of ff, so this is not an hd-only detail.
+- Figure: `outputs/figures/2c_resolution.png` (three smallest examples, worst case on purpose, plus the median example; original 512 | 224 no crop | cropped then 224, at true pixel size).
 - Script: `fig_2c_resolution.py`. Feeds: Decision 2c.
 
 ## Decisions taken
