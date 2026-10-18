@@ -146,8 +146,15 @@ Per answer: (1) valid output, every line matches the grammar; (2) shape count co
 
 How (4) and (6) are computed: the predicted shapes are paired with the true shapes by the assignment with the smallest total action-level Levenshtein distance (images have at most two shapes, so all assignments are tried); within each pair the actions are aligned by Levenshtein at the action level; aligned pairs are compared field by field; unaligned actions count as wrong for all three fields. This deviates from the design text, which paired shapes by the canonical order: a single missing action can change the canonical order and would then misalign every action of both shapes. Exact match (5) still compares the canonical-order strings. Implementation: `scripts/04_zeroshot.py`, `score()`.
 
-Decision rule for 3a, fixed before the run: "cannot read" if style accuracy is below 65% and action-count-within-1 accuracy is below 50%.
+Metric 4 has two columns (added after the pilot, 2026-10-18). "Given order" compares with the gold program as written. "Best alignment" compares with the equivalent description of each gold shape that is closest to the prediction: for a closed shape every start point in both directions, for an open shape both directions. A shape is closed if its end point, simulated with unit length, arc radius 0.5 and the turn applied before each action, lies within 5% of the path length from its start point. The reason: the pilot showed answers that contain the right actions from a different start point, which the given-order column counts as wrong although the drawing is the same (the one-to-many property of the programs). The decision rule uses the best-alignment column; the difference between the columns is reported.
+
+Baselines for style accuracy are per type: random 20%, and the share of the majority style in the train split of that type (ff about 12%, bd and hd about 55%; computed by `summary`).
+
+Decision rule for 3a, fixed before the full run: "cannot read" only if, in every type, style accuracy (best alignment) is below that type's majority baseline plus 10 points and action-count-within-1 accuracy is below 50%. The 10 points are about the width of the confidence interval at 150 answers (plus or minus 8).
+
+Thinking: `thinking_level` is "low" on both models (the lowest level the API offers for them); the pilot reported 0 thought tokens. Accepted as the setting of the experiment; a comparison with "medium" is an open question, not run.
 
 ## Open questions
 
+- **Does a higher thinking level change the zero-shot result?** The zero-shot test runs at `thinking_level` "low" (0 thought tokens observed). A "medium" comparison was not run.
 - **Is C-G sensitive to the order of the two shape blocks?** The paper only tested shuffling the strokes inside a program. To test at evaluation level 3: run C-G on ground-truth programs twice, once in the dataset order and once in the fixed order of decision 1c, on the same problems, and compare accuracy. If the difference is large, the fixed order should be reconsidered or the dataset order restored before the C-G step (the mapping is one-to-one, so restoring is possible when the original order is known).
