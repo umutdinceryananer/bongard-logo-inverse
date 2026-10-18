@@ -152,9 +152,11 @@ Baselines for style accuracy are per type: random 20%, and the share of the majo
 
 Decision rule for 3a, fixed before the full run: "cannot read" only if, in every type, style accuracy (best alignment) is below that type's majority baseline plus 10 points and action-count-within-1 accuracy is below 50%. The 10 points are about the width of the confidence interval at 150 answers (plus or minus 8).
 
-Thinking: `thinking_level` is "low" on both models (the lowest level the API offers for them); the pilot reported 0 thought tokens. Accepted as the setting of the experiment; a comparison with "medium" is an open question, not run.
+Thinking: `thinking_level` is "low" on both models (the lowest level the API offers for them). In the pilot (18 answers, gemini-3.8-flash) the model thought in about half of the calls: 0 thought tokens in 9 answers, about 1,960 in 8, 344 and 1,305 once each. "Low" therefore does not switch thinking off. Accepted as the setting of the experiment; a comparison with "medium" is an open question, not run. The output token budget was raised from 2,048 to 8,192 after one answer was cut off, because the budget covers the thought tokens.
+
+Rate limits: the free tier allows 20 requests per day per model (hit on 2026-10-18 after 21 calls); the full run needs about 1,000 calls and therefore the paid tier.
 
 ## Open questions
 
-- **Does a higher thinking level change the zero-shot result?** The zero-shot test runs at `thinking_level` "low" (0 thought tokens observed). A "medium" comparison was not run.
+- **Does a higher thinking level change the zero-shot result?** The zero-shot test runs at `thinking_level` "low", under which the model still thinks in about half of the calls (up to about 2,000 tokens). A "medium" comparison was not run.
 - **Is C-G sensitive to the order of the two shape blocks?** The paper only tested shuffling the strokes inside a program. To test at evaluation level 3: run C-G on ground-truth programs twice, once in the dataset order and once in the fixed order of decision 1c, on the same problems, and compare accuracy. If the difference is large, the fixed order should be reconsidered or the dataset order restored before the C-G step (the mapping is one-to-one, so restoring is possible when the original order is known).
