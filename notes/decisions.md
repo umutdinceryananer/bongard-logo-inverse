@@ -64,7 +64,27 @@ arc_<style>_<arc_angle>-<turn>
 
 **Evidence:** `scripts/check_1c_shape_order.py` (report in `outputs/logs/1c_shape_order.txt`); Vaishnav and Tammet 2026, section 5.5.
 
-## 2. Images: **open**
+## 2. Images
+
+### 2a. Training images: decided 2026-10-18
+
+**Options**
+- (a) Only the dataset images.
+- (b) Additional images drawn by us from the programs at new poses.
+- (c) Both.
+
+**Choice:** (a). Fallback: if the model does not learn enough from the dataset images, add our own drawings (b); for bd and hd the renderer reproduces the dataset images, for ff the renderer fidelity question (parked in `data_layout.md`) would have to be settled first.
+
+**Reasons**
+- 168,000 images are available with no extra work, and every program already comes with 7 images at different poses (position, rotation, scale), which is the kind of variation extra drawings would add.
+- Drawing our own ff images is blocked by the renderer mismatch (F3); doing it only for bd and hd would skew the mix.
+- Extra data is a remedy for a problem we have not observed yet; the decision can be revisited with evidence from the first training run.
+
+**Evidence:** `data_layout.md` (7 + 7 images per problem; renderer comparison), `findings.md` F2, F3.
+
+### 2b. Problem types in training: **open**
+
+### 2c. Input resolution and cropping: **open**
 
 ## 3. Model: **open**
 

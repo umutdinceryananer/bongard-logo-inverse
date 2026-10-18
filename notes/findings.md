@@ -76,6 +76,11 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - The dataset order is arbitrary: the same pair of shapes recurs in other problems in both orders (ff 24%, bd 26% of recurring pairs). The renderer does not use the order; the C-G paper's 20-point "sequence permutation" drop concerns stroke order inside a program, which stays untouched.
 - Script: `check_1c_shape_order.py`. Details: `decisions.md`, 1c.
 
+### D2a. Training uses the dataset images only; own drawings are a fallback
+
+- 168,000 images with 7 poses per program already give the variation that extra drawings would add; drawing ff images is blocked by the renderer mismatch (F3). Revisit if the first training run shows the model does not learn enough.
+- Details: `decisions.md`, 2a.
+
 ## Open questions
 
 - Is C-G sensitive to the order of the two shape blocks? To be tested at evaluation level 3 with ground-truth programs in both orders.
