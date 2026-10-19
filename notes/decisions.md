@@ -76,7 +76,7 @@ arc_<style>_<arc_angle>-<turn>
 **Choice:** (a). Fallback: if the model does not learn enough from the dataset images, add our own drawings (b); for bd and hd the renderer reproduces the dataset images, for ff the renderer fidelity question (parked in `data_layout.md`) would have to be settled first.
 
 **Reasons**
-- 168,000 images are available with no extra work, and every program already comes with 7 images at different poses (position, rotation, scale), which is the kind of variation extra drawings would add.
+- 168,000 images are available with no extra work. Pose variation (position, rotation, scale) is already in the data: in ff the 7 positive images of every problem are the same program drawn at 7 poses (all 3,600 problems); in bd this holds for 1,125 of 4,000 problems; in hd never, every positive image has its own program (counted 2026-10-19). Extra drawings would add more poses, which ff already has in full.
 - Drawing our own ff images is blocked by the renderer mismatch (F3); doing it only for bd and hd would skew the mix.
 - Extra data is a remedy for a problem we have not observed yet; the decision can be revisited with evidence from the first training run.
 
@@ -133,6 +133,8 @@ Two questions, answered separately.
 | all | 150 | 100 | 83 | 69 | 29 | 3 | |
 
 Reading: every answer is well-formed; the action count is right within 1 in 83% (bd 67%); stroke styles are read far above chance in ff and hd, but in bd the model's 63% does not beat the "normal" majority of 67%; numbers (lengths, turns, arc angles) are weak outside ff (8% in bd, 21% in hd); only 5 of 150 programs are exactly right. Under the decision rule two of three types pass, so the direction is "reads the drawings, coarsely". The final verdict waits for the full run.
+
+**Provisional choice (2026-10-19):** (a), fine-tune a small VLM. The reason for (b), that pretrained vision would not read line drawings, did not hold; what fine-tuning must add is the measurement (lengths, angles, turns). (b) stays as the fallback if fine-tuning does not learn the numbers. Final after K1, K3, gemini-2.5-flash and the memorization check (see `findings.md`, D3a).
 
 ### 3b. Zero-shot models: decided 2026-10-18
 
