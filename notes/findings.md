@@ -84,9 +84,20 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - Numbers (lengths, arc angles, turns), exact: ff one shape 49, ff two shapes 62, bd 8, hd 21. The ff numbers are inflated: line length and arc angle are constants in ff, so the model writes them without reading them. The bd and hd values are the real measure.
 - Exact programs: 5 of 150. Action count within 1: 83% (bd 67%).
 - Reading: format, stroke count and most stroke styles are read; lengths and angles are not. The model sees the structure, not the measurement.
-- Table: `outputs/logs/zeroshot_summary.md`. Figure: `outputs/figures/zeroshot_examples.png`.
+- The other two conditions, same 150 images (style best alignment / numbers exact / exact match, %):
+
+| type | K1: grammar + 3 text programs | K2: grammar + 3 same-type image pairs | K3: grammar + 3 other-type image pairs |
+|---|---|---|---|
+| ff one shape (30) | 58 / 50 / 10 | 62 / 49 / 7 | 39 / 4 / 0 |
+| ff two shapes (30) | 76 / 69 / 7 | 67 / 62 / 7 | 48 / 9 / 0 |
+| bd (60) | 62 / 5 / 0 | 63 / 8 / 0 | 65 / 14 / 0 |
+| hd (30) | 71 / 9 / 3 | 88 / 21 / 3 | 75 / 11 / 3 |
+| all (150) | 66 / 27 / 4 | 69 / 29 / 3 | 58 / 10 / 1 |
+
+- Reading of the conditions: example images of the same type help only in hd (71 to 88 on style, 9 to 21 on numbers); in ff and bd text examples do as well as image examples, so the model is not copying from the example images, it writes from the grammar. Example images of another type lower ff numbers from 55 to 6: the ff "constants" (length 1.000, arc angle 0.625) were taken from the examples, which confirms that the ff number scores are inflated. The action count within 1 is stable across conditions (81 to 83%).
+- gemini-2.5-flash, the paper's pixel baseline, is no longer served to new API users (HTTP 404); the comparison with the paper's model is dropped.
+- Table: `outputs/logs/zeroshot_summary.md`. Figure: `outputs/figures/zeroshot_examples.png` (K2, best and median answer of each type, drawn at a fixed pose next to the truth).
 - Script: `04_zeroshot.py`. Feeds: Decision 3a (model family), Decision 5 (the numbers are the missing part), the C-G paper's bottleneck claim (open question).
-- Pending: K1 and K3 (text-only examples, other-type examples), gemini-2.5-flash, the memorization check.
 
 ### F12. At full input resolution, cropping to the ink adds nothing: +1.7 points on style over 150 images, hd drops 9
 
@@ -137,12 +148,13 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - Checked at full resolution on 150 images (F12): the crop adds 1.7 points on style and hurts hd by 9, below the 10-point rule. The remaining zero-shot runs use the native 512 px images.
 - Evidence: F9, F12. Details: `decisions.md`, 2c.
 
-### D3a. Model family: fine-tune a small VLM, provisional until the full zero-shot run
+### D3a. Model family: fine-tune a small VLM (final, 2026-10-19)
 
-- Rule fixed before the run: train from scratch (b) only if the ready-made VLM cannot read the drawings. It can (F11): two of three types pass the style baseline + 10, the action count is right within 1 in 83%.
-- What fine-tuning has to add is the measurement (lengths, angles, turns), which the untrained model does not read. The main reason for (b), that pretrained vision would not read black-and-white line drawings, did not hold.
-- Size and method follow from the hardware: no local GPU, free Colab T4, so a 2B model, 4-bit, LoRA. (b) stays as the fallback if fine-tuning does not learn the numbers.
-- Evidence: F11, F12. Details: `decisions.md`, 3a. Final verdict after K1, K3, gemini-2.5-flash and the memorization check.
+- Rule fixed before the run: train from scratch (b) only if the ready-made VLM cannot read the drawings, that is, in every type style accuracy below the majority baseline + 10 and action count within 1 below 50%. Result on the full run (F11, K2): ff 64.5 against 30.6 and hd 87.8 against 74.9 pass, bd 63.3 against 77.5 does not; action count within 1 is 83%. The model reads the drawings.
+- What fine-tuning has to add is the measurement (lengths, angles, turns), which the untrained model does not read (numbers 29% overall, 8% in bd). The main reason for (b), that pretrained vision would not read black-and-white line drawings, did not hold.
+- Caveats carried into the decision: the hd result is partly ambiguous (F13); the comparison with the paper's model is not available; one model, one seed.
+- Size and method follow from the hardware: no local GPU, free Colab T4, so a 2B model, 4-bit, LoRA (Decision 4). (b) stays as the fallback if fine-tuning does not learn the numbers.
+- Evidence: F11, F12, F13. Details: `decisions.md`, 3a.
 
 ## Open questions
 
