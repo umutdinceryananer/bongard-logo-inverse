@@ -146,6 +146,8 @@ Reading: every answer is well-formed; the action count is right within 1 in 83% 
 
 Cheap, and an API key is easy to obtain.
 
+**Outcome (2026-10-19):** `gemini-2.5-flash` is not reachable: the API answers HTTP 404, "this model is no longer available to new users", for all three conditions. The comparison with the paper's pixel baseline is therefore not possible with a new key; only `gemini-3.8-flash` is reported. Logged in `outputs/logs/` (the runs stopped at the first call).
+
 ## 4. Model size and training method: **open**
 
 ## 5. Loss: **open**

@@ -149,5 +149,5 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - Is C-G sensitive to the order of the two shape blocks? To be tested at evaluation level 3 with ground-truth programs in both orders.
 - Does a higher thinking level change the zero-shot result? At "low" the model still thinks in about half of the calls (up to about 2,000 tokens). A "medium" comparison was not run.
 - Does the VLM memorize dataset programs? Checked on 20 perturbed programs (F13): no sign in bd, a large but ambiguous drop in hd. A larger check, or one that perturbs to non-majority values only, would be needed to settle it.
-- Is gemini-2.5-flash still reachable through the API? If not, the comparison with the paper's pixel baseline is lost and only the current model is reported.
+- gemini-2.5-flash is not reachable with a new key (HTTP 404, "no longer available to new users", 2026-10-19). The comparison with the paper's pixel baseline is lost; only gemini-3.8-flash is reported.
 - Does "reads the structure, not the measurement" fit the paper's claim that the bottleneck is representational? To discuss with Mohit.
