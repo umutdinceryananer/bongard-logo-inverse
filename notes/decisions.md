@@ -112,7 +112,7 @@ Two questions, answered separately.
 
 ## 3. Model
 
-### 3a. Model family: **open**, decided by the zero-shot test (2026-10-18)
+### 3a. Model family: decided 2026-10-19 by the zero-shot test (rule fixed 2026-10-18)
 
 **Options**
 - (a) Fine-tune a small VLM (about 2B parameters, LoRA, 4-bit, Colab T4).
@@ -138,7 +138,7 @@ Reading: every answer is well-formed; the action count is right within 1 in 83% 
 
 **Final choice (2026-10-19, after the full run):** (a), fine-tune a small VLM. Under the rule fixed in advance, two of three types pass in K2 (ff style 64.5 against baseline + 10 = 30.6; hd 87.8 against 74.9; bd 63.3 against 77.5 does not) and the action count is right within 1 in 83%, so the model reads the drawings. K1 and K3 confirm the reading: text examples do as well as same-type image examples except in hd, and other-type examples lower the ff numbers from 55 to 6, which shows that the ff constants were copied from the examples. The reason for (b), that pretrained vision would not read line drawings, did not hold; what fine-tuning must add is the measurement (numbers 29% overall, 8% in bd). (b) stays as the fallback if fine-tuning does not learn the numbers. Caveats: hd partly ambiguous in the memorization check; no comparison with the paper's model (gemini-2.5-flash unavailable); one model, one seed. Full table in `findings.md`, F11.
 
-### 3a status: decided. The next decisions (4, 5, 7) start from a 2B VLM with LoRA on the Colab T4.
+The next decisions (4, 5, 7) start from a 2B VLM with LoRA on the Colab T4.
 
 ### 3b. Zero-shot models: decided 2026-10-18
 
