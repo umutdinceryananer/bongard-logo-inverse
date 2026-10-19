@@ -95,6 +95,14 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 - Reading: the crop matters when the model downscales the image (F9), not when it sees the full resolution. Consistent with D2c.
 - Logs: `outputs/logs/zeroshot_gemini-3.8-flash_K2.jsonl`, `outputs/logs/zeroshot_gemini-3.8-flash_K2_crop.jsonl`. Feeds: Decision 2c (confirmed), Decision 3b (remaining runs at 512 px).
 
+### F13. Memorization check: 20 perturbed dataset programs; bd unchanged, hd drops, but the drop is not clear evidence of recall
+
+- 20 val programs outside the zero-shot sample (10 bd two-shape, 10 hd one-shape), one action changed in each (11 styles, 9 turns), none of the perturbed shape programs occurs in the dataset, drawn by the painter; gemini-3.8-flash, K2, 512 px.
+- Style accuracy (best alignment), dataset images against new images: bd 63.3 against 63.8 (n=60 / 10); hd 87.8 against 53.2 (n=30 / 10). Numbers: bd 7.8 against 6.0, hd 20.6 against 5.7. Action count within 1: bd 66.7 against 40.0, hd 96.7 against 100.
+- At the changed action the model wrote the new, visible value in 2 of 20 cases, the hidden original value in 8, something else in 7, nothing aligned in 3. Six of the 8 "original" cases are style changes away from "normal", and the two turn cases are the most common turns (0.500, 0.750): the original value is also the majority guess, so these cases do not separate recall from guessing.
+- Reading: for bd there is no sign of memorization; for hd the 35-point drop (10 images, wide interval) may reflect recall of the 627 library shapes or simply that a shape with one changed stroke is less regular and harder to read. The check cannot tell the two apart at this size.
+- Logs: `outputs/logs/zeroshot_memcheck_gemini-3.8-flash.jsonl`, `outputs/logs/memorization/sample.json`. Script: `check_04_memorization.py`. Feeds: Decision 3a (validity of the zero-shot result), open question.
+
 ## Decisions taken
 
 ### D1a. Output format: the dataset strings with the arc radius removed
@@ -140,6 +148,6 @@ The basket for the presentation: every finding so far, in slide-ready form. Each
 
 - Is C-G sensitive to the order of the two shape blocks? To be tested at evaluation level 3 with ground-truth programs in both orders.
 - Does a higher thinking level change the zero-shot result? At "low" the model still thinks in about half of the calls (up to about 2,000 tokens). A "medium" comparison was not run.
-- Does the VLM memorize dataset programs? 20 perturbed dataset programs (one action changed, not in the dataset) are drawn and ready; the run is pending. If accuracy on them is far below the dataset images, memorization is suspected.
+- Does the VLM memorize dataset programs? Checked on 20 perturbed programs (F13): no sign in bd, a large but ambiguous drop in hd. A larger check, or one that perturbs to non-majority values only, would be needed to settle it.
 - Is gemini-2.5-flash still reachable through the API? If not, the comparison with the paper's pixel baseline is lost and only the current model is reported.
 - Does "reads the structure, not the measurement" fit the paper's claim that the bottleneck is representational? To discuss with Mohit.

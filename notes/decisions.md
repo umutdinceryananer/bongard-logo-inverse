@@ -134,6 +134,8 @@ Two questions, answered separately.
 
 Reading: every answer is well-formed; the action count is right within 1 in 83% (bd 67%); stroke styles are read far above chance in ff and hd, but in bd the model's 63% does not beat the "normal" majority of 67%; numbers (lengths, turns, arc angles) are weak outside ff (8% in bd, 21% in hd); only 5 of 150 programs are exactly right. Under the decision rule two of three types pass, so the direction is "reads the drawings, coarsely". The final verdict waits for the full run.
 
+**Memorization check (2026-10-19, step 4 of the run plan):** 20 perturbed val programs drawn by the painter, K2, gemini-3.8-flash. Style accuracy on new images against dataset images: bd 63.8 against 63.3, hd 53.2 against 87.8 (10 images each). At the changed action the model wrote the hidden original value in 8 of 20 cases, but in 6 of those the original was the majority style "normal" and in the other 2 the most common turns, so guessing explains them as well as recall. Verdict: no sign of memorization in bd; the hd drop is real but ambiguous (recall of the library shapes, or a less regular shape being harder). Details in `findings.md`, F13.
+
 **Provisional choice (2026-10-19):** (a), fine-tune a small VLM. The reason for (b), that pretrained vision would not read line drawings, did not hold; what fine-tuning must add is the measurement (lengths, angles, turns). (b) stays as the fallback if fine-tuning does not learn the numbers. Final after K1, K3, gemini-2.5-flash and the memorization check (see `findings.md`, D3a).
 
 ### 3b. Zero-shot models: decided 2026-10-18
